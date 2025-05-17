@@ -1,7 +1,5 @@
 # Verifiable-Computing-AI-Agents
 
-# Verifiable-Computing-AI-Agents
-
 This repository hosts two autonomous AI agent crews built using [CrewAI](https://crewai.io), designed to bring verifiability, integrity, and transparency to AI and decentralized computing workflows. These agents are aligned with FidesInnova’s mission of enabling secure and trustworthy computation in blockchain, IoT, and ML systems.
 
 ## 🔧 Agent Crews
