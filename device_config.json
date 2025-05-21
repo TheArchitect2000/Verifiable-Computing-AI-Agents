@@ -1,10 +1,10 @@
 {
-  "class": 1,
-  "deviceType": "Sensor",
+  "class": 7,
+  "deviceType": "sensor",
   "deviceIdType": "MAC",
   "deviceModel": "Siemens IOT2050",
-  "manufacturer": "MHT",
-  "softwareVersion": "1.3",
+  "manufacturer": "FDS",
+  "softwareVersion": "1.0",
   "code_block": [
     14,
     15
