@@ -11,8 +11,12 @@
 #include <mosquitto.h>
 #include <cstdlib>
 #include <thread>
+.global zkp_start
+zkp_start: nop
 #include <chrono>
 #include <cstring>
+.global zkp_end
+zkp_end: nop
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <vector>

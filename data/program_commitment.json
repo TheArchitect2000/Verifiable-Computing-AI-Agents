@@ -1,50 +1,50 @@
 {
-    "commitmentId": "b0e2c4935221fc095f739043b6a2c875021130ef66dd106603490c7582c0f56e",
-    "deviceType": "Sensor",
+    "commitmentId": "df17fc60d16e7f1e1ac7ff2172ca8679aa5b463da289b34e32921e74aa8eba73",
+    "deviceType": "sensor",
     "deviceIdType": "MAC",
-    "deviceModel": "Siemense IOT2050 2.5",
-    "manufacturer": "MHT",
-    "softwareVersion": "1.3",
+    "deviceModel": "Siemens IOT2050",
+    "manufacturer": "FDS",
+    "softwareVersion": "1.0",
     "class": 1,
     "m": 4,
     "n": 35,
     "p": 1588861,
     "g": 17,
     "row_AHP_A": [
-        1198538,
-        1172235,
-        1304842,
-        1519168
+        694273,
+        667970,
+        800577,
+        1014903
     ],
     "col_AHP_A": [
-        1261638,
-        1235335,
-        1367942,
-        1582268
+        694273,
+        667970,
+        800577,
+        1014903
     ],
     "val_AHP_A": [
-        947655,
-        947655,
-        947655,
-        947655
+        0,
+        0,
+        0,
+        0
     ],
     "row_AHP_B": [
-        1198538,
-        1172235,
-        1304842,
-        1519168
+        694273,
+        667970,
+        800577,
+        1014903
     ],
     "col_AHP_B": [
-        215633,
-        189330,
-        321937,
-        536263
+        694273,
+        667970,
+        800577,
+        1014903
     ],
     "val_AHP_B": [
-        7778,
-        7778,
-        7778,
-        7778
+        0,
+        0,
+        0,
+        0
     ],
     "row_AHP_C": [
         1539690,
@@ -64,12 +64,12 @@
         1050419,
         816594
     ],
-    "Com_AHP0": 1034106,
-    "Com_AHP1": 1120590,
-    "Com_AHP2": 542938,
-    "Com_AHP3": 1034106,
-    "Com_AHP4": 1062284,
-    "Com_AHP5": 719932,
+    "Com_AHP0": 309226,
+    "Com_AHP1": 309226,
+    "Com_AHP2": 0,
+    "Com_AHP3": 309226,
+    "Com_AHP4": 309226,
+    "Com_AHP5": 0,
     "Com_AHP6": 95085,
     "Com_AHP7": 95085,
     "Com_AHP8": 450947,
