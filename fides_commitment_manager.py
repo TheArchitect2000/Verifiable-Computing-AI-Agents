@@ -1,6 +1,7 @@
-#from commitment_management_crew import crew1
 
 import streamlit as st
+
+#from commitment_management_crew import crew1
 import os
 from pathlib import Path
 import json
@@ -280,8 +281,6 @@ def compilerTool(program: str) -> str:
             )
 
         st.success(f"✅ Compilation succeeded. Assembly file: {asm_filename}")
-        st.session_state["asm_filename"] = asm_filename
-        st.session_state["new_filename"] = new_filename
 
         return asm_filename
 
@@ -451,12 +450,14 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
     # get the final assembly file name
     finalAssemblyFile = generatorAgentOutput["finalAssemblyFile"]
 
+
     # check if the param file exists
     if not os.path.exists(paramFile):
         st.error(f"❌ Required param file not found: {paramFile}")
         raise FileNotFoundError(f"{paramFile} param file not found in the current directory.")
     else:
         st.success(f"✅ Required param file found: {paramFile}")
+        st.session_state["paramFile"] = paramFile
         with open(paramFile, "r") as f2:
             params = json.load(f2)
         # Check if the param data is valid
@@ -470,6 +471,7 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
         st.error(f"❌ Required final assembly file not found: {finalAssemblyFile}")
         raise FileNotFoundError(f"{finalAssemblyFile} final assembly file not found in the current directory.")
     else:
+        st.session_state["finalAssemblyFile"] = finalAssemblyFile
         st.success(f"✅ Required final assembly file found: {finalAssemblyFile}")
     # print to let the user know that param file and final assembly files should be used on the device
     # st.info(f"Please create an executable from {finalAssemblyFile} to run on your device. Also, make sure to have the {paramFile} and {commitmentFile} files on the device.")
@@ -481,6 +483,7 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
         st.error(f"❌ Required commitment file not found: {commitmentFile}")
         raise FileNotFoundError(f"{commitmentFile} file not found in the current directory.")
     else:
+        st.session_state["commitmentFile"] = commitmentFile
         st.success(f"✅ Required commitment file found: {commitmentFile}")
         
     # load the commitment file
@@ -863,29 +866,39 @@ if st.button("Submit to ZKP Agent"):
                 st.write("✅ Crew tasks completed.")
                 status.update(label="All tasks completed successfully!", state="complete")
 
-                # Add download button
                 config_path = st.session_state["config_path"]
                 if os.path.exists(config_path):
                     with open(config_path, "rb") as f:
-                        st.download_button(
-                            label="📥 Download device_config.json",
-                            data=f,
-                            file_name="device_config.json",
-                            mime="application/json"
-                    )
-                        
-                    
+                        data = f.read()
+                    b64 = base64.b64encode(data).decode()
+                    href = f'<a href="data:application/octet-stream;base64,{b64}" download="device_config.json">📥 Download device_config.json</a>'
+                    st.markdown(href, unsafe_allow_html=True)
+                else:
+                    st.warning(f"⚠️ File not found: {config_path.name}")
+
                 # Show download buttons
-                for output_file in [st.session_state["new_filename"], st.session_state["asm_filename"]]:
+                for output_file in [st.session_state["paramFile"], st.session_state["commitmentFile"], st.session_state["finalAssemblyFile"]]:
+                    if not output_file:
+                        st.warning("No output file generated.")
+                        continue
                     path = Path(output_file)
                     if path.exists():
-                        st.download_button(
-                            label=f"📥 Download {path.name}",
-                            data=open(path, "rb"),
-                            file_name=path.name
-                        )
+                        with open(path, "rb") as f:
+                            data = f.read()
+                        b64 = base64.b64encode(data).decode()
+                        href = f'<a href="data:application/octet-stream;base64,{b64}" download="{path.name}">📥 Download {path.name}</a>'
+                        st.markdown(href, unsafe_allow_html=True)
                     else:
                         st.warning(f"⚠️ File not found: {path.name}")
+                st.info("""
+                        The commitment file has been uploaded to the Fides Innova blockchain. You can view the transaction on the blockchain explorer.
+                        The assembly file can be compiled and run on your device.
+                        The param file contains the parameters to accelerate executing ZKP when running the program on your device.
+                        Make an executable from the assembly file and run it on your device with the param file.
+                        If you have any questions or issues, please contact the Fides Innova support team at info@fidesinnova.io.
+                        Thank you for using the Fides Innova ZKP Commitment Agent!
+                        """)
+
 
         except Exception as e:
             st.error(f"❌ An error occurred: {e}")
