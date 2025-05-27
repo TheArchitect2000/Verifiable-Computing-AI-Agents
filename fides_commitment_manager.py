@@ -1,10 +1,12 @@
-
 import streamlit as st
 
 #from commitment_management_crew import crew1
 import os
 from pathlib import Path
 import json
+import random
+import hashlib
+import shutil
 
 # set_page_config must be the first Streamlit command
 st.set_page_config(page_title="ZKP Program Metadata Form", layout="centered")
@@ -79,13 +81,47 @@ uploaded_file = st.file_uploader("Upload your program file (.cpp or .py)", type=
 # Target processor selection
 processor = st.selectbox("Choose your target processor", ["RISC-V", "ARM"], index=0)
 
+
+# Initialize session state if not exists
+if 'session_id' not in st.session_state:
+    # Generate random number and create hash
+    random_num = random.getrandbits(128)
+    hash_object = hashlib.sha256(str(random_num).encode())
+    hash_hex = hash_object.hexdigest()
+    
+    # Shorten hash to 16 characters
+    session_id = hash_hex[:16]
+    st.session_state['session_id'] = session_id
+    
+    # Create directory with session ID
+    session_dir = Path(f"session_{session_id}")
+    session_dir.mkdir(exist_ok=True)
+    st.session_state['session_dir'] = session_dir
+    
+    # st.info(f"Session initialized with ID: {session_id}")
+
+    # Get current session directory
+    session_dir = st.session_state['session_dir']
+else:
+    session_dir = st.session_state['session_dir']
+
 # Store uploaded file in the current directory
 program_name = ""
 if uploaded_file is not None:
     program_name = uploaded_file.name
-    with open(program_name, "wb") as f:
+    with open(f"{session_dir}/{program_name}", "wb") as f:
         f.write(uploaded_file.read())
-    st.success(f"Uploaded and saved as {program_name}")
+#    st.success(f"Uploaded and saved as {program_name}")
+
+# if the program_name file exists in the session directory, copy it to the session directory
+if program_name:
+    session_dir = st.session_state['session_dir']
+    # copy all files from /lib to the session directory
+    shutil.copytree("lib", session_dir / "lib", dirs_exist_ok=True)
+    shutil.copytree("data", session_dir / "data", dirs_exist_ok=True)
+    # copy file class.json to the session directory
+    shutil.copy2("class.json", session_dir / "class.json")
+    #st.success("Necessary files copied to the session directory.")
 
 # Class input as a slider between 1 and 16
 program_class = st.slider("ZKP class", min_value=1, max_value=16, value=1)
@@ -97,7 +133,6 @@ device_model = st.text_input("Device model", value="Siemens IOT2050")
 manufacturer = st.text_input("Manufacturer", value="Fides")
 software_version = st.text_input("Software version", value="1.0")
 code_block = st.text_input("Code block", value="[14, 15]")
-
 
 #################################################
 #################################################
@@ -188,10 +223,12 @@ def deviceConfigTool(myJson: str) -> str:
     except json.JSONDecodeError:
         st.error("❌ Error: Provided input is not valid JSON.")
         return "Error: Provided input is not valid JSON."
+        
+    session_dir = st.session_state['session_dir']
 
     # Save the config file
     config_path = "device_config.json"
-    with open(config_path, "w+") as f:
+    with open(f"{session_dir}/{config_path}", "w+") as f:
         json.dump(parsed, f, indent=2)
 
     st.success("✅ Device config file updated successfully.")
@@ -243,6 +280,9 @@ def compilerTool(program: str) -> str:
     ext = ext.lower()
     filename = base_name + ext
 
+    session_dir = st.session_state['session_dir']
+
+
     if ext == ".py":
         language = "Python"
     elif ext == ".cpp":
@@ -253,7 +293,7 @@ def compilerTool(program: str) -> str:
 
     st.write(f"📄 Detected language: **{language}**")
 
-    with open(program, "r") as f1:
+    with open(f"{session_dir}/{program}", "r") as f1:
         program_code = f1.read()
 
     if language == "C++":
@@ -264,13 +304,13 @@ def compilerTool(program: str) -> str:
             modified_code = program_code
 
         new_filename = f"{base_name}_AddedFidesZKPLib.cpp"
-        with open(new_filename, "w") as f2:
+        with open(f"{session_dir}/{new_filename}", "w") as f2:
             f2.write(modified_code)
         st.success(f"✅ Generated instrumented file: {new_filename}")
 
         asm_filename = f"{base_name}_AddedFidesZKPLib.s"
         command_to_execute = f"g++ -std=c++17 -S {new_filename} -o {asm_filename} -lstdc++"
-        result = subprocess.run(command_to_execute.split(), capture_output=True, text=True)
+        result = subprocess.run(command_to_execute.split(), capture_output=True, text=True, cwd=session_dir)
         st.write(f"🔧 Executing: `{command_to_execute}`")
 
         if result.returncode != 0:
@@ -350,10 +390,11 @@ def commitmentGeneratorOnMacTool(program: str) -> str:
     Run the commitment generator on macOS and display results in Streamlit.
     """
 
-    command_to_execute = f"./commitmentGenerator-method2-Mac {program}"
+    session_dir = st.session_state['session_dir']
+    command_to_execute = f"../commitmentGenerator-method2-Mac {program}"
     st.write(f"🛠️ Executing: `{command_to_execute}`")
 
-    result = subprocess.run(command_to_execute.split(), capture_output=True, text=True)
+    result = subprocess.run(command_to_execute.split(), capture_output=True, text=True, cwd=session_dir)
 
     if result.returncode != 0:
         st.error("❌ Commitment generation failed:")
@@ -371,11 +412,12 @@ def commitmentGeneratorOnUbuntuTool(program: str) -> str:
     """
     Run the commitment generator on Ubuntu and display results in Streamlit.
     """
-
+    
+    session_dir = st.session_state['session_dir']
     command_to_execute = f"./commitmentGenerator-method2-ubuntu {program}"
     st.write(f"🛠️ Executing: `{command_to_execute}`")
 
-    result = subprocess.run(command_to_execute.split(), capture_output=True, text=True)
+    result = subprocess.run(command_to_execute.split(), capture_output=True, text=True, cwd=session_dir)
 
     if result.returncode != 0:
         st.error("❌ Commitment generation failed:")
@@ -410,6 +452,9 @@ from web3 import Web3
 import datetime
 import uuid
 import os
+import hashlib
+import random
+import shutil
 
 ##########################################################
 ##########################################################
@@ -450,15 +495,16 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
     # get the final assembly file name
     finalAssemblyFile = generatorAgentOutput["finalAssemblyFile"]
 
+    session_dir = st.session_state['session_dir']
 
     # check if the param file exists
-    if not os.path.exists(paramFile):
+    if not os.path.exists(f"{session_dir}/{paramFile}"):
         st.error(f"❌ Required param file not found: {paramFile}")
         raise FileNotFoundError(f"{paramFile} param file not found in the current directory.")
     else:
         st.success(f"✅ Required param file found: {paramFile}")
         st.session_state["paramFile"] = paramFile
-        with open(paramFile, "r") as f2:
+        with open(f"{session_dir}/{paramFile}", "r") as f2:
             params = json.load(f2)
         # Check if the param data is valid
         if not isinstance(params, dict):
@@ -467,7 +513,7 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
         else:
             st.success(f"✅ {paramFile} file is valid.")
     # do the same checking for the final assembly file
-    if not os.path.exists(finalAssemblyFile):
+    if not os.path.exists(f"{session_dir}/{finalAssemblyFile}"):
         st.error(f"❌ Required final assembly file not found: {finalAssemblyFile}")
         raise FileNotFoundError(f"{finalAssemblyFile} final assembly file not found in the current directory.")
     else:
@@ -479,7 +525,7 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
 
     # do the same checking for the commitment file
     # check if the commitment file exists
-    if not os.path.exists(commitmentFile):
+    if not os.path.exists(f"{session_dir}/{commitmentFile}"):
         st.error(f"❌ Required commitment file not found: {commitmentFile}")
         raise FileNotFoundError(f"{commitmentFile} file not found in the current directory.")
     else:
@@ -487,7 +533,7 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
         st.success(f"✅ Required commitment file found: {commitmentFile}")
         
     # load the commitment file
-    with open(commitmentFile, "r") as f1:
+    with open(f"{session_dir}/{commitmentFile}", "r") as f1:
         commitmentData = f1.read()
     # Check if the commitment file is a valid json file
     try:
@@ -509,7 +555,7 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
         raise ValueError("Invalid commitment data. It should not be smaller than 10 bytes.")
 
     # do the same checking for the device_config.json file
-    if not os.path.exists("device_config.json"):
+    if not os.path.exists(f"{session_dir}/device_config.json"):
         st.error(f"❌ Required device_config.json file not found.")
         raise FileNotFoundError(f"device_config.json file not found. Please make sure it is in the current directory.")
     else:
@@ -517,7 +563,7 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
     # load the device_config.json file
     # Check if the device_config.json file is a valid json file
     try:
-        with open("device_config.json", "r") as f2:
+        with open(f"{session_dir}/device_config.json", "r") as f2:
             device_config = json.load(f2)
     except json.JSONDecodeError:
         st.error("❌ Invalid device_config.json file. It should be a valid json file.")
@@ -663,11 +709,12 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
             raise ConnectionError("Failed to connect to the Fides Innova blockchain.")
 
         # Check if the AgentAIMiniCode_AddedFidesZKPLib_commitment.json file exists
-        if not os.path.exists(commitmentFile):
+
+        if not os.path.exists(f"{session_dir}/{commitmentFile}"):
             st.error(f"❌ Required commitment file not found: {commitmentFile}")
             raise FileNotFoundError(f"{commitmentFile} file not found. Please make sure it is in the current directory.")
         # read the commitment_id from the commitmentId in the AgentAIMiniCode_AddedFidesZKPLib_commitment.json file
-        with open(commitmentFile, "r") as f1:
+        with open(f"{session_dir}/{commitmentFile}", "r") as f1:
             commitmentData = json.load(f1)
         commitment_id = commitmentData.get("commitmentId")
         if not commitment_id:
@@ -867,8 +914,8 @@ if st.button("Submit to ZKP Agent"):
                 status.update(label="All tasks completed successfully!", state="complete")
 
                 config_path = st.session_state["config_path"]
-                if os.path.exists(config_path):
-                    with open(config_path, "rb") as f:
+                if os.path.exists(f"{session_dir}/{config_path}"):
+                    with open(f"{session_dir}/{config_path}", "rb") as f:
                         data = f.read()
                     b64 = base64.b64encode(data).decode()
                     href = f'<a href="data:application/octet-stream;base64,{b64}" download="device_config.json">📥 Download device_config.json</a>'
@@ -881,7 +928,7 @@ if st.button("Submit to ZKP Agent"):
                     if not output_file:
                         st.warning("No output file generated.")
                         continue
-                    path = Path(output_file)
+                    path = Path(f"{session_dir}/{output_file}")
                     if path.exists():
                         with open(path, "rb") as f:
                             data = f.read()
@@ -890,16 +937,20 @@ if st.button("Submit to ZKP Agent"):
                         st.markdown(href, unsafe_allow_html=True)
                     else:
                         st.warning(f"⚠️ File not found: {path.name}")
-                st.markdown("""
-                            <div style='background-color:#e1f5fe;padding:10px;border-radius:5px'>
-                                - The commitment file has been uploaded to the Fides Innova blockchain. You can view the transaction on the blockchain explorer.<br>
-                                - The assembly file can be compiled and run on your device.<br>
-                                - The param file contains the parameters to accelerate executing ZKP when running the program on your device.<br>
-                                - Make an executable from the assembly file and run it on your device with the param and commitment file.<br>
-                                - If you have any questions or issues, please contact the Fides Innova support team at info@fidesinnova.io.<br>
-                                - Thank you for using the Fides Innova ZKP Commitment Agent!
-                            </div>
-                            """, unsafe_allow_html=True)
+                
+                st.markdown(f"""
+                <div style='background-color:#e1f5fe;padding:10px;border-radius:5px'>
+                    <ul>
+                        <li>The commitment file has been uploaded to the Fides Innova blockchain. You can view the transaction on the blockchain explorer.</li>
+                        <li>Your id is: <strong>{st.session_state['session_id']}</strong></li>
+                        <li>The assembly file can be compiled and run on your device.</li>
+                        <li>The param file contains the parameters to accelerate executing ZKP when running the program on your device.</li>
+                        <li>Make an executable from the assembly file and run it on your device with the param and commitment file.</li>
+                        <li>If you have any questions or issues, please contact the Fides Innova support team at info@fidesinnova.io.</li>
+                        <li>Thank you for using the Fides Innova ZKP Commitment Agent!</li>
+                    </ul>
+                </div>
+                """, unsafe_allow_html=True)
 
 
         except Exception as e:
