@@ -890,14 +890,16 @@ if st.button("Submit to ZKP Agent"):
                         st.markdown(href, unsafe_allow_html=True)
                     else:
                         st.warning(f"⚠️ File not found: {path.name}")
-                st.info("""
-                        The commitment file has been uploaded to the Fides Innova blockchain. You can view the transaction on the blockchain explorer.
-                        The assembly file can be compiled and run on your device.
-                        The param file contains the parameters to accelerate executing ZKP when running the program on your device.
-                        Make an executable from the assembly file and run it on your device with the param file.
-                        If you have any questions or issues, please contact the Fides Innova support team at info@fidesinnova.io.
-                        Thank you for using the Fides Innova ZKP Commitment Agent!
-                        """)
+                st.markdown("""
+                            <div style='background-color:#e1f5fe;padding:10px;border-radius:5px'>
+                                - The commitment file has been uploaded to the Fides Innova blockchain. You can view the transaction on the blockchain explorer.<br>
+                                - The assembly file can be compiled and run on your device.<br>
+                                - The param file contains the parameters to accelerate executing ZKP when running the program on your device.<br>
+                                - Make an executable from the assembly file and run it on your device with the param and commitment file.<br>
+                                - If you have any questions or issues, please contact the Fides Innova support team at info@fidesinnova.io.<br>
+                                - Thank you for using the Fides Innova ZKP Commitment Agent!
+                            </div>
+                            """, unsafe_allow_html=True)
 
 
         except Exception as e:
