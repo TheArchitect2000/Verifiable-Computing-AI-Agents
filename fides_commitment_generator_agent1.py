@@ -72,16 +72,97 @@ with st.sidebar:
 
 st.title("ZKP Commitment Generator Agent")
 
-st.markdown("Please upload your program file and fill in the fields below.")
+st.markdown("""
+<div style="background-color:#f5f5f5;padding:15px;border-radius:8px;">
+  <p style="font-size:16px;">
+    This agent enhances your <strong>C++</strong> and <strong>Python</strong> programs with <strong>verifiable computing</strong>. It automatically analyzes your code, injects the necessary instructions for <strong>Zero-Knowledge Proof (ZKP) generation</strong>, and compiles it into an assembly file. The agent then creates a <strong>cryptographic commitment</strong> and uploads it to the blockchain.
+  </p>
+  <p style="font-size:16px;">
+    You will receive the generated <strong>assembly file</strong>, which you can compile into an executable specific to your device.
+  </p>
+  <p style="font-size:16px;color:#b71c1c;">
+    ⚠️ Please note: We <strong>do not</strong> generate the final executable, as processor models vary.
+  </p>
+  <p style="font-size:16px;">
+    For assistance, contact us at <a href="mailto:info@fidesinnova.io">info@fidesinnova.io</a> or join the conversation on our <a href="https://discord.com/invite/NQdM6JGwcs" target="_blank">Discord</a>.
+  </p>
+</div>
+""", unsafe_allow_html=True)
 
-st.write(os.getcwd())
+# st.write(os.getcwd())
+
+st.markdown("<br><br>", unsafe_allow_html=True)
 
 # File uploader for program file
 uploaded_file = st.file_uploader("Upload your program file (.cpp or .py)", type=["cpp", "py"])
 
+st.markdown("<br><br>", unsafe_allow_html=True)
 # Target processor selection
-processor = st.selectbox("Choose your target processor", ["RISC-V", "ARM"], index=0)
+st.markdown("""
+<div style="background-color:#f5f5f5;padding:10px;border-radius:6px;margin-bottom:10px;">
+  <p style="font-size:16px;">
+    Select the <strong>processor type</strong> for your device. The agent will generate <strong>assembly code</strong> tailored to your selected architecture.
+    You will receive the final <code>.s</code> (assembly) file, which you can compile into an executable for your specific hardware.
+  </p>
+</div>
+""", unsafe_allow_html=True)
 
+processor = st.selectbox(
+    "Device Processor Type",
+    ["RISC-V", "ARM"],
+    index=0
+)
+
+st.markdown("<br><br>", unsafe_allow_html=True)
+# We have two methods to execute your code on a device. Embedded ZKP mode and Assisted Trigger mode. In Embedded ZKP mode, your final executable code will generate ZKP. In this method, our agent will our ZKP generation library to your code and 
+# it increase the size of your program. In Assisted Trigger mode, we will not add our ZKp SDK to your code and only will add some tages to your code to let a dubger knows when you want to start ZKP generation process. This method
+# will add a minimum number of opcodes to your program and your program size will not incrase. however, the execution of yur program on your device will be paused for a short period (a few nano sec) to read the processor register values.
+st.markdown("""
+<div style="background-color:#f4f4f4;padding:15px;border-radius:8px;">
+  <p style="font-size:16px;"><strong>Execution Mode to Generate ZKP:</strong> We offer two modes for executing your program on a device: <strong>Embedded ZKP</strong> and <strong>Assisted Trigger</strong>.</p>
+
+  <ul style="font-size:15px;">
+    <li><strong>Embedded ZKP:</strong> The agent injects the full ZKP generation library into your code. Your final executable can independently generate ZKPs, but this increases the program size.</li>
+    <li><strong>Assisted Trigger:</strong> The agent adds lightweight markers to your code to signal when ZKP generation should begin. This approach keeps your program size minimal but briefly pauses execution (a few nanoseconds) to capture processor register values.</li>
+  </ul>
+</div>
+""", unsafe_allow_html=True)
+
+generation_method = st.selectbox(
+    "Execution Mode to Generate ZKP",
+    ["Embedded ZKP", "Assisted Trigger"],
+    index=0
+)
+
+# Store uploaded file in the current directory
+program_name = ""
+if uploaded_file is not None:
+    program_name = uploaded_file.name
+    with open(f"{session_dir}/{program_name}", "wb") as f:
+        f.write(uploaded_file.read())
+    st.success(f"Uploaded and saved as {program_name}")
+
+# if the program_name file exists in the session directory, copy it to the session directory
+if program_name:
+    session_dir = st.session_state['session_dir']
+    # copy all files from /lib to the session directory
+    shutil.copytree("lib", session_dir / "lib", dirs_exist_ok=True)
+    shutil.copytree("data", session_dir / "data", dirs_exist_ok=True)
+    # copy file class.json to the session directory
+    shutil.copy2("class.json", session_dir / "class.json")
+    #st.success("Necessary files copied to the session directory.")
+
+st.markdown("<br><br>", unsafe_allow_html=True)
+# Class input as a slider between 1 and 16
+program_class = st.slider("ZKP class", min_value=1, max_value=16, value=1)
+
+# Other metadata fields
+device_type = st.text_input("Device type", value="Sensor")
+device_id_type = st.text_input("Device ID type", value="MAC")
+device_model = st.text_input("Device model", value="Siemens IOT2050")
+manufacturer = st.text_input("Manufacturer", value="Fides")
+software_version = st.text_input("Software version", value="1.0")
+code_block = st.text_input("Code block", value="[33, 34]")
 
 # Initialize session state if not exists
 if 'session_id' not in st.session_state:
@@ -105,35 +186,6 @@ if 'session_id' not in st.session_state:
     session_dir = st.session_state['session_dir']
 else:
     session_dir = st.session_state['session_dir']
-
-# Store uploaded file in the current directory
-program_name = ""
-if uploaded_file is not None:
-    program_name = uploaded_file.name
-    with open(f"{session_dir}/{program_name}", "wb") as f:
-        f.write(uploaded_file.read())
-    st.success(f"Uploaded and saved as {program_name}")
-
-# if the program_name file exists in the session directory, copy it to the session directory
-if program_name:
-    session_dir = st.session_state['session_dir']
-    # copy all files from /lib to the session directory
-    shutil.copytree("lib", session_dir / "lib", dirs_exist_ok=True)
-    shutil.copytree("data", session_dir / "data", dirs_exist_ok=True)
-    # copy file class.json to the session directory
-    shutil.copy2("class.json", session_dir / "class.json")
-    #st.success("Necessary files copied to the session directory.")
-
-# Class input as a slider between 1 and 16
-program_class = st.slider("ZKP class", min_value=1, max_value=16, value=1)
-
-# Other metadata fields
-device_type = st.text_input("Device type", value="Sensor")
-device_id_type = st.text_input("Device ID type", value="MAC")
-device_model = st.text_input("Device model", value="Siemens IOT2050")
-manufacturer = st.text_input("Manufacturer", value="Fides")
-software_version = st.text_input("Software version", value="1.0")
-code_block = st.text_input("Code block", value="[14, 15]")
 
 #################################################
 #################################################
@@ -310,7 +362,7 @@ def compilerTool(program: str) -> str:
         st.success(f"✅ Generated instrumented file: {new_filename}")
 
         asm_filename = f"{base_name}_FidesZKPLib.s"
-        command_to_execute = f"g++ -std=c++17 -S {new_filename} -o {asm_filename} -lstdc++"
+        command_to_execute = f"arm-linux-gnueabihf-g++ -std=c++17 -S {new_filename} -o {asm_filename}"
         result = subprocess.run(command_to_execute.split(), capture_output=True, text=True, cwd=session_dir)
         st.write(f"🔧 Executing: `{command_to_execute}`")
 
@@ -356,7 +408,7 @@ CompileTask = Task(
 # commitmentGeneratorTask = Task()
 
 # execute:
-# commitmentGenerator-method2-ubuntu program_FidesZKPLib.s
+# commitmentGenerator-method2-x86-ubuntu-targetARM program_FidesZKPLib.s
 # commitmentGenerator-method2-Mac program_FidesZKPLib.s
 
 # Role, Goal, Backstory, LLm instance, Tool (optional)
@@ -415,7 +467,7 @@ def commitmentGeneratorOnUbuntuTool(program: str) -> str:
     """
     
     session_dir = st.session_state['session_dir']
-    command_to_execute = f"../commitmentGenerator-method2-ubuntu {program}"
+    command_to_execute = f"../commitmentGenerator-method2-x86-ubuntu-targetARM {program}"
     st.write(f"🛠️ Executing: `{command_to_execute}`")
 
     result = subprocess.run(command_to_execute.split(), capture_output=True, text=True, cwd=session_dir)
@@ -876,7 +928,7 @@ crew1 = Crew( agents = agents, tasks= tasks, verbose = True)
 #     deviceModel = input("What's your device model? (default: Siemens IOT2050)")
 #     manufacturer = input("What's your brand name? (default: Fides)")
 #     softwareVersion = input("What's your program/firmware version? (default: 1.0)")
-#     code_block = input("What's your program/firmware version? (default: [14, 15]])")
+#     code_block = input("What's your program/firmware version? (default: [33, 34]])")
 
 #     result = crew1.kickoff({"program":question,
 #                             "class": program_class or "1",
@@ -885,7 +937,7 @@ crew1 = Crew( agents = agents, tasks= tasks, verbose = True)
 #                             "deviceModel": deviceModel or "Siemens IOT2050",
 #                             "manufacturer": manufacturer or "FDS",
 #                             "softwareVersion": softwareVersion or "1.0",
-#                             "code_block": code_block or "[14, 15]"
+#                             "code_block": code_block or "[33, 34]"
 #                             })
 #     return result
 ##############################################################
@@ -908,7 +960,7 @@ if st.button("Submit to ZKP Agent"):
                     "deviceModel": device_model or "Siemens IOT2050",
                     "manufacturer": manufacturer or "FDS",
                     "softwareVersion": software_version or "1.0",
-                    "code_block": code_block or "[14, 15]"
+                    "code_block": code_block or "[33, 34]"
                 })
 
                 st.write("✅ Crew tasks completed.")
