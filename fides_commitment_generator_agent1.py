@@ -11,7 +11,6 @@ import shutil
 # set_page_config must be the first Streamlit command
 st.set_page_config(page_title="ZKP Program Metadata Form", layout="centered")
 
-
 # Inject custom CSS to style the sidebar
 st.markdown(
     """
@@ -75,6 +74,8 @@ st.title("ZKP Commitment Generator Agent")
 
 st.markdown("Please upload your program file and fill in the fields below.")
 
+st.write(os.getcwd())
+
 # File uploader for program file
 uploaded_file = st.file_uploader("Upload your program file (.cpp or .py)", type=["cpp", "py"])
 
@@ -90,15 +91,15 @@ if 'session_id' not in st.session_state:
     hash_hex = hash_object.hexdigest()
     
     # Shorten hash to 16 characters
-    session_id = hash_hex[:16]
+    session_id = hash_hex[:8]
     st.session_state['session_id'] = session_id
     
     # Create directory with session ID
-    session_dir = Path(f"session_{session_id}")
+    session_dir = Path(f"s_{session_id}")
     session_dir.mkdir(exist_ok=True)
     st.session_state['session_dir'] = session_dir
     
-    # st.info(f"Session initialized with ID: {session_id}")
+    st.info(f"Session initialized with ID: {session_id}")
 
     # Get current session directory
     session_dir = st.session_state['session_dir']
@@ -111,7 +112,7 @@ if uploaded_file is not None:
     program_name = uploaded_file.name
     with open(f"{session_dir}/{program_name}", "wb") as f:
         f.write(uploaded_file.read())
-#    st.success(f"Uploaded and saved as {program_name}")
+    st.success(f"Uploaded and saved as {program_name}")
 
 # if the program_name file exists in the session directory, copy it to the session directory
 if program_name:
@@ -138,8 +139,8 @@ code_block = st.text_input("Code block", value="[14, 15]")
 #################################################
 # The agent asks the developer a program file.
 # {Program}{Language}
-# If it's a C++ code, the agent will add the FidesZKP.h library to the user's program.cpp program and will save it as program_AddedFidesZKPLib.cpp
-# If it's a Python code, the agent will add the Fides Python package to the user's program.py program and will save it as program_AddedFidesZKPLib.py
+# If it's a C++ code, the agent will add the FidesZKP.h library to the user's program.cpp program and will save it as program_FidesZKPLib.cpp
+# If it's a Python code, the agent will add the Fides Python package to the user's program.py program and will save it as program_FidesZKPLib.py
 #
 # {Processor}
 # Then, the agent asks the developer to choose a target processor including RISC-V and ARM.
@@ -303,12 +304,12 @@ def compilerTool(program: str) -> str:
         else:
             modified_code = program_code
 
-        new_filename = f"{base_name}_AddedFidesZKPLib.cpp"
+        new_filename = f"{base_name}_FidesZKPLib.cpp"
         with open(f"{session_dir}/{new_filename}", "w") as f2:
             f2.write(modified_code)
         st.success(f"✅ Generated instrumented file: {new_filename}")
 
-        asm_filename = f"{base_name}_AddedFidesZKPLib.s"
+        asm_filename = f"{base_name}_FidesZKPLib.s"
         command_to_execute = f"g++ -std=c++17 -S {new_filename} -o {asm_filename} -lstdc++"
         result = subprocess.run(command_to_execute.split(), capture_output=True, text=True, cwd=session_dir)
         st.write(f"🔧 Executing: `{command_to_execute}`")
@@ -355,8 +356,8 @@ CompileTask = Task(
 # commitmentGeneratorTask = Task()
 
 # execute:
-# commitmentGenerator-method2-ubuntu program_AddedFidesZKPLib.s
-# commitmentGenerator-method2-Mac program_AddedFidesZKPLib.s
+# commitmentGenerator-method2-ubuntu program_FidesZKPLib.s
+# commitmentGenerator-method2-Mac program_FidesZKPLib.s
 
 # Role, Goal, Backstory, LLm instance, Tool (optional)
 @tool("operatingSystemTool")
@@ -414,7 +415,7 @@ def commitmentGeneratorOnUbuntuTool(program: str) -> str:
     """
     
     session_dir = st.session_state['session_dir']
-    command_to_execute = f"./commitmentGenerator-method2-ubuntu {program}"
+    command_to_execute = f"../commitmentGenerator-method2-ubuntu {program}"
     st.write(f"🛠️ Executing: `{command_to_execute}`")
 
     result = subprocess.run(command_to_execute.split(), capture_output=True, text=True, cwd=session_dir)
@@ -708,12 +709,12 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
             st.error("Failed to connect to the Fides Innova blockchain.")
             raise ConnectionError("Failed to connect to the Fides Innova blockchain.")
 
-        # Check if the AgentAIMiniCode_AddedFidesZKPLib_commitment.json file exists
+        # Check if the AgentAIMiniCode_FidesZKPLib_commitment.json file exists
 
         if not os.path.exists(f"{session_dir}/{commitmentFile}"):
             st.error(f"❌ Required commitment file not found: {commitmentFile}")
             raise FileNotFoundError(f"{commitmentFile} file not found. Please make sure it is in the current directory.")
-        # read the commitment_id from the commitmentId in the AgentAIMiniCode_AddedFidesZKPLib_commitment.json file
+        # read the commitment_id from the commitmentId in the AgentAIMiniCode_FidesZKPLib_commitment.json file
         with open(f"{session_dir}/{commitmentFile}", "r") as f1:
             commitmentData = json.load(f1)
         commitment_id = commitmentData.get("commitmentId")
