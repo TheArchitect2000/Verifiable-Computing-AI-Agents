@@ -1,0 +1,78 @@
+{
+    "commitmentId": "1b5b5a4a6bd1da9153bd0edac82ef2560d6a0322deba8090318ef17a8de8259f",
+    "deviceType": "Sensor",
+    "deviceIdType": "MAC",
+    "deviceModel": "Siemens IOT2050",
+    "manufacturer": "Fides",
+    "softwareVersion": "1.0",
+    "class": 1,
+    "m": 4,
+    "n": 35,
+    "p": 1588861,
+    "g": 17,
+    "row_AHP_A": [
+        694273,
+        667970,
+        800577,
+        1014903
+    ],
+    "col_AHP_A": [
+        694273,
+        667970,
+        800577,
+        1014903
+    ],
+    "val_AHP_A": [
+        0,
+        0,
+        0,
+        0
+    ],
+    "row_AHP_B": [
+        694273,
+        667970,
+        800577,
+        1014903
+    ],
+    "col_AHP_B": [
+        694273,
+        667970,
+        800577,
+        1014903
+    ],
+    "val_AHP_B": [
+        0,
+        0,
+        0,
+        0
+    ],
+    "row_AHP_C": [
+        1539690,
+        252040,
+        1089890,
+        976702
+    ],
+    "col_AHP_C": [
+        1539690,
+        252040,
+        1089890,
+        976702
+    ],
+    "val_AHP_C": [
+        1147974,
+        1381799,
+        1050419,
+        816594
+    ],
+    "Com_AHP0": 309226,
+    "Com_AHP1": 309226,
+    "Com_AHP2": 0,
+    "Com_AHP3": 309226,
+    "Com_AHP4": 309226,
+    "Com_AHP5": 0,
+    "Com_AHP6": 95085,
+    "Com_AHP7": 95085,
+    "Com_AHP8": 450947,
+    "curve": "bn128",
+    "polynomialCommitment": "KZG"
+}

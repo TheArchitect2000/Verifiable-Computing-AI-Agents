@@ -7,6 +7,7 @@ import json
 import random
 import hashlib
 import shutil
+import platform
 
 # set_page_config must be the first Streamlit command
 st.set_page_config(page_title="ZKP Program Metadata Form", layout="centered")
@@ -109,60 +110,33 @@ st.markdown("""
 
 processor = st.selectbox(
     "Device Processor Type",
-    ["RISC-V", "ARM"],
-    index=0
+    ["RiscV", "ARM"],
+    index=1
 )
 
 st.markdown("<br><br>", unsafe_allow_html=True)
-# We have two methods to execute your code on a device. Embedded ZKP mode and Assisted Trigger mode. In Embedded ZKP mode, your final executable code will generate ZKP. In this method, our agent will our ZKP generation library to your code and 
+# We have two methods to execute your code on a device. Embedded-ZKP mode and Assisted-Trigger mode. In Embedded ZKP mode, your final executable code will generate ZKP. In this method, our agent will our ZKP generation library to your code and 
 # it increase the size of your program. In Assisted Trigger mode, we will not add our ZKp SDK to your code and only will add some tages to your code to let a dubger knows when you want to start ZKP generation process. This method
 # will add a minimum number of opcodes to your program and your program size will not incrase. however, the execution of yur program on your device will be paused for a short period (a few nano sec) to read the processor register values.
 st.markdown("""
 <div style="background-color:#f4f4f4;padding:15px;border-radius:8px;">
-  <p style="font-size:16px;"><strong>Execution Mode to Generate ZKP:</strong> We offer two modes for executing your program on a device: <strong>Embedded ZKP</strong> and <strong>Assisted Trigger</strong>.</p>
+  <p style="font-size:16px;"><strong>Execution Mode to Generate ZKP:</strong> We offer two modes for executing your program on a device: <strong>Embedded-ZKP</strong> and <strong>Assisted-Trigger</strong>.</p>
 
   <ul style="font-size:15px;">
-    <li><strong>Embedded ZKP:</strong> The agent injects the full ZKP generation library into your code. Your final executable can independently generate ZKPs, but this increases the program size.</li>
-    <li><strong>Assisted Trigger:</strong> The agent adds lightweight markers to your code to signal when ZKP generation should begin. This approach keeps your program size minimal but briefly pauses execution (a few nanoseconds) to capture processor register values.</li>
+    <li><strong>Embedded-ZKP:</strong> The agent injects the full ZKP generation library into your code. Your final executable can independently generate ZKPs, but this increases the program size.</li>
+    <li><strong>Assisted-Trigger:</strong> The agent adds lightweight markers to your code to signal when ZKP generation should begin. This approach keeps your program size minimal but briefly pauses execution (a few nanoseconds) to capture processor register values.</li>
   </ul>
 </div>
 """, unsafe_allow_html=True)
 
 generation_method = st.selectbox(
     "Execution Mode to Generate ZKP",
-    ["Embedded ZKP", "Assisted Trigger"],
-    index=0
+    ["Embedded-ZKP", "Assisted-Trigger"],
+    index=1
 )
 
-# Store uploaded file in the current directory
-program_name = ""
-if uploaded_file is not None:
-    program_name = uploaded_file.name
-    with open(f"{session_dir}/{program_name}", "wb") as f:
-        f.write(uploaded_file.read())
-    st.success(f"Uploaded and saved as {program_name}")
-
-# if the program_name file exists in the session directory, copy it to the session directory
-if program_name:
-    session_dir = st.session_state['session_dir']
-    # copy all files from /lib to the session directory
-    shutil.copytree("lib", session_dir / "lib", dirs_exist_ok=True)
-    shutil.copytree("data", session_dir / "data", dirs_exist_ok=True)
-    # copy file class.json to the session directory
-    shutil.copy2("class.json", session_dir / "class.json")
-    #st.success("Necessary files copied to the session directory.")
-
-st.markdown("<br><br>", unsafe_allow_html=True)
-# Class input as a slider between 1 and 16
-program_class = st.slider("ZKP class", min_value=1, max_value=16, value=1)
-
-# Other metadata fields
-device_type = st.text_input("Device type", value="Sensor")
-device_id_type = st.text_input("Device ID type", value="MAC")
-device_model = st.text_input("Device model", value="Siemens IOT2050")
-manufacturer = st.text_input("Manufacturer", value="Fides")
-software_version = st.text_input("Software version", value="1.0")
-code_block = st.text_input("Code block", value="[33, 34]")
+# set commitmentGenerator exection file in session
+st.session_state['commitmentGeneratorExecutorName'] = f"commitmentGenerator-{generation_method}-{processor}"
 
 # Initialize session state if not exists
 if 'session_id' not in st.session_state:
@@ -186,6 +160,36 @@ if 'session_id' not in st.session_state:
     session_dir = st.session_state['session_dir']
 else:
     session_dir = st.session_state['session_dir']
+
+# Store uploaded file in the current directory
+program_name = ""
+if uploaded_file is not None:
+    program_name = uploaded_file.name
+    with open(f"{session_dir}/{program_name}", "wb") as f:
+        f.write(uploaded_file.read())
+    st.success(f"Uploaded and saved as {program_name}")
+
+# if the program_name file exists in the session directory, copy it to the session directory
+if program_name:
+    # copy all files from /lib to the session directory
+    shutil.copytree("lib", session_dir / "lib", dirs_exist_ok=True)
+    shutil.copytree("data", session_dir / "data", dirs_exist_ok=True)
+    # copy file class.json to the session directory
+    shutil.copy2("class.json", session_dir / "class.json")
+    #st.success("Necessary files copied to the session directory.")
+
+st.markdown("<br><br>", unsafe_allow_html=True)
+# Class input as a slider between 1 and 16
+program_class = st.slider("ZKP class", min_value=1, max_value=16, value=1)
+
+# Other metadata fields
+device_type = st.text_input("Device type", value="Sensor")
+device_id_type = st.text_input("Device ID type", value="MAC")
+device_model = st.text_input("Device model", value="Siemens IOT2050")
+manufacturer = st.text_input("Manufacturer", value="Fides")
+software_version = st.text_input("Software version", value="1.0")
+code_block = st.text_input("Code block", value="[33, 34]")
+
 
 #################################################
 #################################################
@@ -424,50 +428,50 @@ def operatingSystemTool() -> str:
             with open('/etc/lsb-release', 'r') as f:
                 content = f.read()
                 if 'DISTRIB_ID=Ubuntu' in content:
-                    os_type = "Ubuntu"
+                    os_type = "ubuntu"
                 else:
-                    os_type = "Linux (Other)"
+                    os_type = "Linux(Other)"
+                    raise ValueError(f"The recognized operating system is {os_type}. This agent does not have any commitment generator for this os. Please contact info@fidesinnova.io for further instruction.")
         else:
-            os_type = "Linux (Likely)"
+            os_type = "Linux(Likely)"
+            raise ValueError(f"The recognized operating system is {os_type}. This agent does not have any commitment generator for this os. Please contact info@fidesinnova.io for further instruction.")
+
     elif sys.platform == 'darwin':
-        os_type = "macOS"
+        os_type = "mac"
     else:
         os_type = "Other OS"
+        raise ValueError(f"The recognized operating system is {os_type}. This agent does not have any commitment generator for this os. Please contact info@fidesinnova.io for further instruction.")
 
     st.info(f"🖥️ Detected Operating System: `{os_type}`")
+
+    st.session_state['commitmentGeneratorExecutorName'] += f"-{os_type}"
+
+    # Detect processor type
+    processor_arch = platform.machine()
+
+    if processor_arch in ["x86_64", "amd64", "i386"]:
+        processor_type = "x86"
+    elif processor_arch in ["arm64", "aarch64"]:
+        processor_type = "arm"
+    else:
+        processor_type = processor_arch
+        raise ValueError(f"The recognized processor type is {processor_type}, which is currently unsupported. Please contact info@fidesinnova.io for further instructions.")
+
+    st.session_state['commitmentGeneratorExecutorName'] += f"-{processor_type}"
+
+    st.info(f"I've chosed this commitmentGenerator based on your operating system and CPU architecture: {st.session_state['commitmentGeneratorExecutorName']}")
+
     return os_type
 
-@tool("commitmentGeneratorOnMacTool")
-def commitmentGeneratorOnMacTool(program: str) -> str:
+@tool("commitmentGeneratorTool")
+def commitmentGeneratorTool(program: str) -> str:
     """
-    Run the commitment generator on macOS and display results in Streamlit.
-    """
-
-    session_dir = st.session_state['session_dir']
-    command_to_execute = f"../commitmentGenerator-method2-Mac {program}"
-    st.write(f"🛠️ Executing: `{command_to_execute}`")
-
-    result = subprocess.run(command_to_execute.split(), capture_output=True, text=True, cwd=session_dir)
-
-    if result.returncode != 0:
-        st.error("❌ Commitment generation failed:")
-        # st.code(result.stderr, language="bash")
-        raise RuntimeError(
-            f"Commitment Generation failed!\nError Output:\n{result.stderr}"
-        )
-
-    st.success("✅ Commitment generation completed.")
-    # st.code(result.stdout)
-    return result.stdout
-
-@tool("commitmentGeneratorOnUbuntuTool")
-def commitmentGeneratorOnUbuntuTool(program: str) -> str:
-    """
-    Run the commitment generator on Ubuntu and display results in Streamlit.
+    Run the commitment generator and display results in Streamlit.
     """
     
     session_dir = st.session_state['session_dir']
-    command_to_execute = f"../commitmentGenerator-method2-x86-ubuntu-targetARM {program}"
+    st.write(f"program: {program}")
+    command_to_execute = f"../{st.session_state['commitmentGeneratorExecutorName']} {program}"
     st.write(f"🛠️ Executing: `{command_to_execute}`")
 
     result = subprocess.run(command_to_execute.split(), capture_output=True, text=True, cwd=session_dir)
@@ -484,9 +488,9 @@ def commitmentGeneratorOnUbuntuTool(program: str) -> str:
     return result.stdout
 
 commitmentGeneratorAgent = Agent(role="commitmentGenerator",
-                                 goal = "If there is an error from the CompilerAgent output, then do nothing, do not execute any tool, and stop the crew. Otherwise, based on the return value of operatingSystemTool, find out which computer's operation system is currently running on the computer. If it's a macOS, execute commitmentGeneratorOnMacTool tool. The input for this tool is the output filename from the Compiler agent. If it's a Ubuntu, execute commitmentGeneratorOnUbuntuTool tool. The input for this tool is the output filename from the Compiler agent. Otherwise, tell the user that you support only macOS and Ubuntu platform at the moment and you do not have a tool for the current operating system.",
+                                 goal = "If there is an error from the CompilerAgent output, then do nothing, do not execute any tool, and stop the crew. Otherwise, based on the return value of operatingSystemTool, find out which computer's operation system is currently running on the computer. If it's a mac or ubuntu, execute commitmentGeneratorTool tool. The input for this tool is the output filename from the Compiler agent. Otherwise, tell the user that you support only mac and ubuntu operating systems and you do not have a tool for the current operating system.",
                                  backstory="",
-                                 tools = [operatingSystemTool, commitmentGeneratorOnMacTool, commitmentGeneratorOnUbuntuTool],
+                                 tools = [operatingSystemTool, commitmentGeneratorTool],
                                  llm=llm_model
                                  )
 FindingOperatingSystemTask = Task( agent = commitmentGeneratorAgent,
@@ -494,7 +498,7 @@ FindingOperatingSystemTask = Task( agent = commitmentGeneratorAgent,
                                expected_output="Operating System type"
                                )
 ExecutingCommitmentGeneratorTask = Task( agent = commitmentGeneratorAgent,
-                               description = "Based on the output of the operatingSystemTool tool, choose which tool, commitmentGeneratorOnUbuntuTool or commitmentGeneratorOnLinuxTool or none, must be executed.",
+                               description = "Based on the output of the operatingSystemTool tool, run commitmentGeneratorTool or none.",
                                expected_output="If the output of the tools is successful, return in a json format with keys 'commitmentFile' and 'paramFile' and 'finalAssemblyFile'. The values are the file name from the output of the tool. If there is an error, print the error for the user and provide some suggestions to fix it. Then, do not proceed with any other agent and stop the crew."
                                )
 
@@ -995,7 +999,7 @@ if st.button("Submit to ZKP Agent"):
                 <div style='background-color:#e1f5fe;padding:10px;border-radius:5px'>
                     <ul>
                         <li>The commitment file has been uploaded to the Fides Innova blockchain. You can view the transaction on the blockchain explorer.</li>
-                        <li>Your id is: <strong>{st.session_state['session_id']}</strong></li>
+                        <li>Your workd id is: <strong>{st.session_state['session_id']}</strong>. Please include the work id in your future emails to info@fidesinnova.io.</li>
                         <li>The assembly file can be compiled and run on your device.</li>
                         <li>The param file contains the parameters to accelerate executing ZKP when running the program on your device.</li>
                         <li>Make an executable from the assembly file and run it on your device with the param and commitment file.</li>
