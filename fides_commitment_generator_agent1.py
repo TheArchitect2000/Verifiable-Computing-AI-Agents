@@ -273,6 +273,7 @@ def deviceConfigTool(myJson: str) -> str:
     """
     Save the input myJson (stringified JSON) into device_config.json.
     """
+
     import json
 
     try:
@@ -309,14 +310,17 @@ deviceConfigAgent = Agent(
     ),
     backstory="You are responsible for creating device configs based on user inputs.",
     tools=[deviceConfigTool],
-    llm=llm_model
+    llm=llm_model,
+    max_retry_limit=0, # Limit Agent retries
+    max_iter=1, # Limit tool iterations to ensure it stops on tool error
+
 )
 
 deviceConfigTask = Task(
     agent=deviceConfigAgent,
     description=(
         "Generate a JSON object called myJson with the specified keys and values. "
-        "Then invoke deviceConfigTool(myJson) to save it to device_config.json."
+        "Then invoke only once deviceConfigTool(myJson) to save it to device_config.json."
     ),
     expected_output="Print a message whether the device config file is updated or not."
 )
@@ -330,6 +334,7 @@ def compilerTool(program: str) -> str:
     Reads the user program, adds FidesZKP includes, compiles it to assembly,
     displays progress, and provides download buttons for output files.
     """
+
     from pathlib import Path
 
     filename = os.path.basename(program)
@@ -367,7 +372,7 @@ def compilerTool(program: str) -> str:
 
         asm_filename = f"{base_name}_FidesZKPLib.s"
         command_to_execute = f"arm-linux-gnueabihf-g++ -std=c++17 -S {new_filename} -o {asm_filename}"
-        result = subprocess.run(command_to_execute.split(), capture_output=True, text=True, cwd=session_dir)
+        result = subprocess.run(command_to_execute.split(), capture_output=True, text=True, cwd=session_dir, timeout=30)
         st.write(f"🔧 Executing: `{command_to_execute}`")
 
         if result.returncode != 0:
@@ -387,16 +392,18 @@ def compilerTool(program: str) -> str:
     
 CompilerAgent = Agent(
     role="Compiler",
-    goal="Execute the compilerTool tool. The default {program} filename is program.cpp if it's not set by the user. If there is any error, print the error for the user and provide some suggestions to fix it. Then, do not proceed with any other agent and stop the crew.",
+    goal="Execute the compilerTool tool only once. If there is any error, print the error for the user and provide some suggestions to fix it. Then, do not proceed with any other agent and stop the crew.",
     backstory="",
     tools=[compilerTool],
     allow_delegation=True,
-    llm=llm_model
+    llm=llm_model,
+    max_retry_limit=0, # Limit Agent retries
+    max_iter=1, # Limit tool iterations to ensure it stops on tool error
 )
 
 CompileTask = Task(
     agent=CompilerAgent,
-    description="Process the user's program file {program} with compilerTool.",
+    description="Process the user's program file {program} with compilerTool only once.",
     expected_output=(
         "If there is no error from the g++ compilation command, then return only the assembly output filename resulting from execution of the g++ compiler. "
         "If there is any error, print the error for the user and provide some suggestions to fix it. Then, do not proceed with any other agent and stop the crew."
@@ -468,13 +475,19 @@ def commitmentGeneratorTool(program: str) -> str:
     """
     Run the commitment generator and display results in Streamlit.
     """
-    
+
     session_dir = st.session_state['session_dir']
+
+    # Check if the commitmentGenerator executor file exists
+    if not os.path.exists(f"{st.session_state['commitmentGeneratorExecutorName']}"):
+        st.error(f"❌ Required commitmentGenerator executor not found: {st.session_state['commitmentGeneratorExecutorName']}")
+        raise RuntimeError(f"commitmentGenerator executor '{st.session_state['commitmentGeneratorExecutorName']}' not found in the parent directory. Please contact info@fidesinnova.io for further instructions.")
+
     st.write(f"program: {program}")
     command_to_execute = f"../{st.session_state['commitmentGeneratorExecutorName']} {program}"
-    st.write(f"🛠️ Executing: `{command_to_execute}`")
+    st.write(f"🛠️ Executing: `{command_to_execute[3:]}`")
 
-    result = subprocess.run(command_to_execute.split(), capture_output=True, text=True, cwd=session_dir)
+    result = subprocess.run(command_to_execute.split(), capture_output=True, text=True, cwd=session_dir, timeout=30)
 
     if result.returncode != 0:
         st.error("❌ Commitment generation failed:")
@@ -488,17 +501,20 @@ def commitmentGeneratorTool(program: str) -> str:
     return result.stdout
 
 commitmentGeneratorAgent = Agent(role="commitmentGenerator",
-                                 goal = "If there is an error from the CompilerAgent output, then do nothing, do not execute any tool, and stop the crew. Otherwise, based on the return value of operatingSystemTool, find out which computer's operation system is currently running on the computer. If it's a mac or ubuntu, execute commitmentGeneratorTool tool. The input for this tool is the output filename from the Compiler agent. Otherwise, tell the user that you support only mac and ubuntu operating systems and you do not have a tool for the current operating system.",
+                                 goal = "If there is an error from the CompilerAgent output, stop the agent and the crew. Otherwise, based on the return value of operatingSystemTool, find out which computer's operation system is currently running on the computer. If it's a mac or ubuntu, execute commitmentGeneratorTool tool. The input for this tool is the output filename from the Compiler agent. Otherwise, tell the user that you support only mac and ubuntu operating systems and you do not have a tool for the current operating system.",
                                  backstory="",
                                  tools = [operatingSystemTool, commitmentGeneratorTool],
-                                 llm=llm_model
+                                 llm=llm_model,
+                                 max_retry_limit=0, # Limit Agent retries
+                                 max_iter=1, # Limit tool iterations to ensure it stops on tool error
+
                                  )
 FindingOperatingSystemTask = Task( agent = commitmentGeneratorAgent,
                                description = "Call the operatingSystemTool with the output of the Compiler agent as the input. Then, based on the output operatingSystemTool, determine the type of operating system.",
                                expected_output="Operating System type"
                                )
 ExecutingCommitmentGeneratorTask = Task( agent = commitmentGeneratorAgent,
-                               description = "Based on the output of the operatingSystemTool tool, run commitmentGeneratorTool or none.",
+                               description = "Based on the output of the operatingSystemTool tool, run only once the commitmentGeneratorTool.",
                                expected_output="If the output of the tools is successful, return in a json format with keys 'commitmentFile' and 'paramFile' and 'finalAssemblyFile'. The values are the file name from the output of the tool. If there is an error, print the error for the user and provide some suggestions to fix it. Then, do not proceed with any other agent and stop the crew."
                                )
 
@@ -557,7 +573,7 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
     # check if the param file exists
     if not os.path.exists(f"{session_dir}/{paramFile}"):
         st.error(f"❌ Required param file not found: {paramFile}")
-        raise FileNotFoundError(f"{paramFile} param file not found in the current directory.")
+        raise RuntimeError(f"{paramFile} param file not found in the current directory.")
     else:
         st.success(f"✅ Required param file found: {paramFile}")
         st.session_state["paramFile"] = paramFile
@@ -909,18 +925,27 @@ commitmentSubmitterAgent = Agent(role="commitmentSubmitter",
                                  goal="Read the commitment file from the commitmentGenerator agent, and also, read the device_config.json, then call the commitmentSubmitter tool to upload the commitment json file on the Fides Innova blockchain network.",
                                  backstory="",
                                  tools=[commitmentSubmitterTool],
-                                 llm=llm_model
+                                 llm=llm_model,
+                                 max_retry_limit=0, # Limit Agent retries
+                                 max_iter=1, # Limit tool iterations to ensure it stops on tool error
                                  )
 
 commitmentSubmitterTask = Task(agent=commitmentSubmitterAgent,
-                               description="Read the commitment file from the commitmentGenerator agent, and also, read the device_config.json, then call the commitmentSubmitter tool to upload the commitment json file on the Fides Innova blockchain network.",
+                               description="Read the commitment file from the commitmentGenerator agent, and also, read the device_config.json, then call only once the commitmentSubmitter tool to upload the commitment json file on the Fides Innova blockchain network.",
                                expected_output="A success message indicating the commitment file has been uploaded as well as a link to the transaction on the blockchain explorer." )
 
+#############################################
+#############################################
 # Verifiable Computing Crew"""
 # Agent, Description, Expected Output
 agents = [deviceConfigAgent, CompilerAgent,  commitmentGeneratorAgent, commitmentSubmitterAgent]
 tasks =  [deviceConfigTask, CompileTask, FindingOperatingSystemTask, ExecutingCommitmentGeneratorTask, commitmentSubmitterTask]
-crew1 = Crew( agents = agents, tasks= tasks, verbose = True)
+crew1 = Crew( agents = agents, 
+              tasks = tasks, 
+              verbose = True,
+              memory = False,
+              max_iterations = 1  # Only allow each agent one try
+            )
 
 # Test"""
 
