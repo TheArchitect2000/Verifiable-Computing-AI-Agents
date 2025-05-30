@@ -1,0 +1,12 @@
+{
+  "class": 1,
+  "deviceType": "Sensor",
+  "deviceIdType": "MAC",
+  "deviceModel": "Siemens IOT2050",
+  "manufacturer": "Fides",
+  "softwareVersion": "1.0",
+  "code_block": [
+    33,
+    34
+  ]
+}

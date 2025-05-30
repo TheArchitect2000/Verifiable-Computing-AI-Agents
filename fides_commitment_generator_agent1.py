@@ -51,35 +51,35 @@ with st.sidebar:
         unsafe_allow_html=True
     )
 
-st.markdown("---", unsafe_allow_html=True)
+    st.markdown("---", unsafe_allow_html=True)
 
- # st.markdown("### 🔗 Links", unsafe_allow_html=True)
-st.markdown("""
-            <div style="color:white">
-            <h3>🔗 Links</h3>
-            <ul>
-                <li><a href="https://www.fidesinnova.io" target="_blank" style="color:white;">🌐 Fides Innova Website</a></li>
-                <li><a href="https://x.com/fidesinnova" target="_blank" style="color:white;">🐦 Fides Innova on X</a></li>
-                <li><a href="https://www.youtube.com/@fidesinnova" target="_blank" style="color:white;">📺 YouTube Channel</a></li>
-                <li><a href="https://github.com/TheArchitect2000/iot-server" target="_blank" style="color:white;">💻 GitHub IoT Server</a></li>
-                <li><a href="https://github.com/TheArchitect2000/zkiot-arm-siemens-iot2050-c" target="_blank" style="color:white;">💻 ZKP Device Integration</a></li>
-                <li><a href="https://github.com/TheArchitect2000/Fides-Innova-WiKi?tab=readme-ov-file#fidesinnova-wiki" target="_blank" style="color:white;">📘 Wiki</a></li>
-            </ul>
-            </div>""",
-            unsafe_allow_html=True
-            )
+    # st.markdown("### 🔗 Links", unsafe_allow_html=True)
+    st.markdown("""
+                <div style="color:white">
+                <h3>🔗 Links</h3>
+                <ul>
+                    <li><a href="https://www.fidesinnova.io" target="_blank" style="color:white;">🌐 Fides Innova Website</a></li>
+                    <li><a href="https://x.com/fidesinnova" target="_blank" style="color:white;">🐦 Fides Innova on X</a></li>
+                    <li><a href="https://www.youtube.com/@fidesinnova" target="_blank" style="color:white;">📺 YouTube Channel</a></li>
+                    <li><a href="https://github.com/TheArchitect2000/iot-server" target="_blank" style="color:white;">💻 GitHub IoT Server</a></li>
+                    <li><a href="https://github.com/TheArchitect2000/zkiot-arm-siemens-iot2050-c" target="_blank" style="color:white;">💻 ZKP Device Integration</a></li>
+                    <li><a href="https://github.com/TheArchitect2000/Fides-Innova-WiKi?tab=readme-ov-file#fidesinnova-wiki" target="_blank" style="color:white;">📘 Wiki</a></li>
+                </ul>
+                </div>""",
+                unsafe_allow_html=True
+                )
 
+
+########### Starting the main page ########################
 st.title("ZKP Commitment Generator Agent")
 
 st.markdown("""
 <div style="background-color:#f5f5f5;padding:15px;border-radius:8px;">
   <p style="font-size:16px;">
-    This agent enhances your <strong>C++</strong> and <strong>Python</strong> programs with <strong>verifiable computing</strong>. It automatically analyzes your code, injects the necessary instructions for <strong>Zero-Knowledge Proof (ZKP) generation</strong>, and compiles it into an assembly file. The agent then creates a <strong>cryptographic commitment</strong> and uploads it to the blockchain.
+    This agent enhances your <strong>C++</strong> and <strong>Python</strong> programs with <strong>verifiable computing</strong>. It automatically analyzes your code, injects the necessary instructions for <strong>Zero-Knowledge Proof (ZKP) generation</strong>, and compiles it into an assembly file. The agent then creates a <strong>cryptographic commitment</strong> and uploads it to the <strong>Fides Innova blockchain</strong>.
   </p>
   <p style="font-size:16px;">
     You will receive the generated <strong>assembly file</strong>, which you can compile into an executable specific to your device.
-  </p>
-  <p style="font-size:16px;color:#b71c1c;">
     ⚠️ Please note: We <strong>do not</strong> generate the final executable, as processor models vary.
   </p>
   <p style="font-size:16px;">
@@ -91,50 +91,17 @@ st.markdown("""
 # st.write(os.getcwd())
 
 st.markdown("<br><br>", unsafe_allow_html=True)
-
+st.markdown("""
+<div style="background-color:#f5f5f5;padding:10px;border-radius:6px;margin-bottom:10px;">
+  <p style="font-size:16px;">
+    <strong>Step 1: </strong>Select the <strong>program file</strong> where you want to add ZKP generation code.
+  </p>
+</div>
+""", unsafe_allow_html=True)
 # File uploader for program file
 uploaded_file = st.file_uploader("Upload your program file (.cpp or .py)", type=["cpp", "py"])
 
 st.markdown("<br><br>", unsafe_allow_html=True)
-# Target processor selection
-st.markdown("""
-<div style="background-color:#f5f5f5;padding:10px;border-radius:6px;margin-bottom:10px;">
-  <p style="font-size:16px;">
-    Select the <strong>processor type</strong> for your device. The agent will generate <strong>assembly code</strong> tailored to your selected architecture.
-    You will receive the final <code>.s</code> (assembly) file, which you can compile into an executable for your specific hardware.
-  </p>
-</div>
-""", unsafe_allow_html=True)
-
-processor = st.selectbox(
-    "Device Processor Type",
-    ["RiscV", "ARM"],
-    index=1
-)
-
-st.markdown("<br><br>", unsafe_allow_html=True)
-# We have two methods to execute your code on a device. Embedded-ZKP mode and Assisted-Trigger mode. In Embedded ZKP mode, your final executable code will generate ZKP. In this method, our agent will our ZKP generation library to your code and 
-# it increase the size of your program. In Assisted Trigger mode, we will not add our ZKp SDK to your code and only will add some tages to your code to let a dubger knows when you want to start ZKP generation process. This method
-# will add a minimum number of opcodes to your program and your program size will not incrase. however, the execution of yur program on your device will be paused for a short period (a few nano sec) to read the processor register values.
-st.markdown("""
-<div style="background-color:#f4f4f4;padding:15px;border-radius:8px;">
-  <p style="font-size:16px;"><strong>Execution Mode to Generate ZKP:</strong> We offer two modes for executing your program on a device: <strong>Embedded-ZKP</strong> and <strong>Assisted-Trigger</strong>.</p>
-
-  <ul style="font-size:15px;">
-    <li><strong>Embedded-ZKP:</strong> The agent injects the full ZKP generation library into your code. Your final executable can independently generate ZKPs, but this increases the program size.</li>
-    <li><strong>Assisted-Trigger:</strong> The agent adds lightweight markers to your code to signal when ZKP generation should begin. This approach keeps your program size minimal but briefly pauses execution (a few nanoseconds) to capture processor register values.</li>
-  </ul>
-</div>
-""", unsafe_allow_html=True)
-
-generation_method = st.selectbox(
-    "Execution Mode to Generate ZKP",
-    ["Embedded-ZKP", "Assisted-Trigger"],
-    index=1
-)
-
-# set commitmentGenerator exection file in session
-st.session_state['commitmentGeneratorExecutorName'] = f"commitmentGenerator-{generation_method}-{processor}"
 
 # Initialize session state if not exists
 if 'session_id' not in st.session_state:
@@ -151,8 +118,6 @@ if 'session_id' not in st.session_state:
     session_dir = Path(f"s_{session_id}")
     session_dir.mkdir(exist_ok=True)
     st.session_state['session_dir'] = session_dir
-    
-    st.info(f"Session initialized with ID: {session_id}")
 
     # Get current session directory
     session_dir = st.session_state['session_dir']
@@ -176,18 +141,82 @@ if program_name:
     shutil.copy2("class.json", session_dir / "class.json")
     #st.success("Necessary files copied to the session directory.")
 
+
+# Target processor selection
+st.markdown("""
+<div style="background-color:#f5f5f5;padding:10px;border-radius:6px;margin-bottom:10px;">
+  <p style="font-size:16px;">
+    <strong>Step 2: </strong>Select the <strong>processor type</strong> for your device. The agent will generate <strong>assembly code</strong> tailored to your selected architecture.
+    You will receive the final <code>.s</code> (assembly) file, which you can compile into an executable for your specific hardware.
+  </p>
+</div>
+""", unsafe_allow_html=True)
+processor = st.selectbox(
+    "Processor Type of Your IoT Device or Target Machine",
+    ["RiscV", "ARM"],
+    index=1
+)
+
+
+st.markdown("<br><br>", unsafe_allow_html=True)
+# We have two methods to execute your code on a device. Embedded-ZKP mode and Assisted-Trigger mode. In Embedded ZKP mode, your final executable code will generate ZKP. In this method, our agent will our ZKP generation library to your code and 
+# it increase the size of your program. In Assisted Trigger mode, we will not add our ZKp SDK to your code and only will add some tages to your code to let a dubger knows when you want to start ZKP generation process. This method
+# will add a minimum number of opcodes to your program and your program size will not incrase. however, the execution of yur program on your device will be paused for a short period (a few nano sec) to read the processor register values.
+st.markdown("""
+<div style="background-color:#f4f4f4;padding:15px;border-radius:8px;">
+  <p style="font-size:16px;"><strong>Step 3: Execution Mode to Generate ZKP:</strong> We offer two modes for executing your program on a device: <strong>Embedded-ZKP</strong> and <strong>Assisted-Trigger</strong>.</p>
+
+  <ul style="font-size:15px;">
+    <li><strong>Embedded-ZKP:</strong> The agent injects the full ZKP generation library into your code. Your final executable can independently generate ZKPs, but this increases the program size.</li>
+    <li><strong>Assisted-Trigger:</strong> The agent adds lightweight markers to your code to signal when ZKP generation should begin. This approach keeps your program size minimal but briefly pauses execution (a few nanoseconds) to capture processor register values.</li>
+  </ul>
+</div>
+""", unsafe_allow_html=True)
+generation_method = st.selectbox(
+    "Execution Mode to Generate ZKP",
+    ["Embedded-ZKP", "Assisted-Trigger"],
+    index=1
+)
+
+# set commitmentGenerator execution file in session
+st.session_state['commitmentGeneratorExecutorName'] = f"commitmentGenerator-{generation_method}-{processor}"
+
 st.markdown("<br><br>", unsafe_allow_html=True)
 # Class input as a slider between 1 and 16
+st.markdown("""
+<div style="background-color:#f4f4f4;padding:15px;border-radius:8px;">
+  <p style="font-size:16px;"><strong>Step 4: ZKP Class:</strong> We offer 16 ZKP classes. To learn about these classes, please refer to our Wiki page.</p>
+</div>
+""", unsafe_allow_html=True)
 program_class = st.slider("ZKP class", min_value=1, max_value=16, value=1)
 
+st.markdown("<br><br>", unsafe_allow_html=True)
+
 # Other metadata fields
+st.markdown("""
+<div style="background-color:#f4f4f4;padding:15px;border-radius:8px;">
+  <p style="font-size:16px;"><strong>Step 5: Device Specifications:</strong></p>
+</div>
+""", unsafe_allow_html=True)
+
 device_type = st.text_input("Device type", value="Sensor")
 device_id_type = st.text_input("Device ID type", value="MAC")
 device_model = st.text_input("Device model", value="Siemens IOT2050")
 manufacturer = st.text_input("Manufacturer", value="Fides")
 software_version = st.text_input("Software version", value="1.0")
+
+st.markdown("<br><br>", unsafe_allow_html=True)
+
+st.markdown("""
+<div style="background-color:#f4f4f4;padding:15px;border-radius:8px;">
+  <p style="font-size:16px;"><strong>Step 6: Code Block:</strong> Which parts of your code require ZKP generation? If you’re using a device like the Siemens IoT2050, you can afford a larger code block. For smaller processors such as the ESP32C6, consider using smaller code segments to optimize performance. </p>
+</div>
+""", unsafe_allow_html=True)
 code_block = st.text_input("Code block", value="[33, 34]")
 
+st.markdown("<br><br>", unsafe_allow_html=True)
+
+st.info(f"System message: Session initialized with ID {st.session_state['session_dir']}.")
 
 #################################################
 #################################################
@@ -233,7 +262,7 @@ from langchain_openai import ChatOpenAI
 
 # Initialize the OpenAI model
 llm_model = ChatOpenAI(
-    model="gpt-4",
+    model="gpt-4o-mini",
     temperature=0.1,
     max_tokens=4096,
     streaming=True,
@@ -257,9 +286,10 @@ os.environ['OTEL_EXPORTER_OTLP_TRACES_PROTOCOL']= "http/protobuf"
 import mlflow
 mlflow.crewai.autolog()
 
-###########################
-#### Device Config Agent
-
+################################################################
+################################################################
+#### Device Config Agent #######################################
+################################################################
 # Role, Goal, Backstory, LLm instance, Tool (optional)
 
 # deviceConfigTool = tool()
@@ -311,121 +341,27 @@ deviceConfigAgent = Agent(
     llm=llm_model,
     max_retry_limit=0, # Limit Agent retries
     max_iter=1, # Limit tool iterations to ensure it stops on tool error
-
 )
 
 deviceConfigTask = Task(
     agent=deviceConfigAgent,
-    description=(
-        "Generate a JSON object called myJson with the specified keys and values. "
-        "Then invoke only once deviceConfigTool(myJson) to save it to device_config.json."
-    ),
-    expected_output="Print a message whether the device config file is updated or not."
+    description= """
+                Generate a JSON object called myJson with the specified keys and values. 
+                Then invoke only once deviceConfigTool(myJson) to save it to device_config.json.
+                """,
+    expected_output = "Print a message whether the device config file is updated or not.",
+    tools=[deviceConfigTool]
 )
 
-#########################
+####################################################################
+####################################################################
 #### Compiler Agent #####
+####################################################################
 
-@tool("CompilerTool")
-def compilerTool(program: str) -> str:
-    """
-    Reads the user program, adds FidesZKP includes, compiles it to assembly,
-    displays progress, and provides download buttons for output files.
-    """
-
-    from pathlib import Path
-
-    filename = os.path.basename(program)
-    base_name, ext = os.path.splitext(filename)
-    ext = ext.lower()
-    filename = base_name + ext
-
-    session_dir = st.session_state['session_dir']
-
-
-    if ext == ".py":
-        language = "Python"
-    elif ext == ".cpp":
-        language = "C++"
-    else:
-        st.error(f"❌ Unsupported file extension: {ext}")
-        raise ValueError("Unsupported file extension")
-
-    st.write(f"📄 Detected language: **{language}**")
-
-    with open(f"{session_dir}/{program}", "r") as f1:
-        program_code = f1.read()
-
-    if language == "C++":
-        new_line = '#include "lib/fidesinnova.h"\n'
-        if new_line not in program_code:
-            modified_code = new_line + program_code
-        else:
-            modified_code = program_code
-
-        new_filename = f"{base_name}_FidesZKPLib.cpp"
-        with open(f"{session_dir}/{new_filename}", "w") as f2:
-            f2.write(modified_code)
-        st.success(f"✅ Generated instrumented file: {new_filename}")
-
-        asm_filename = f"{base_name}_FidesZKPLib.s"
-        command_to_execute = f"arm-linux-gnueabihf-g++ -std=c++17 -S {new_filename} -o {asm_filename}"
-        result = subprocess.run(command_to_execute.split(), capture_output=True, text=True, cwd=session_dir, timeout=30)
-        st.write(f"🔧 Executing: `{command_to_execute}`")
-
-        if result.returncode != 0:
-            st.error("❌ Compilation failed:")
-            # st.code(result.stderr, language="bash")
-            raise RuntimeError(
-                f"Compilation failed!\nError Output:\n{result.stderr}"
-            )
-
-        st.success(f"✅ Compilation succeeded. Assembly file: {asm_filename}")
-
-        return asm_filename
-
-    else:
-        st.error("Only C++ is supported for now")
-        raise NotImplementedError("Only C++ is supported for now")
-    
-CompilerAgent = Agent(
-    role="Compiler",
-    goal="Execute the compilerTool tool only once. If there is any error, print the error for the user and provide some suggestions to fix it. Then, do not proceed with any other agent and stop the crew.",
-    backstory="",
-    tools=[compilerTool],
-    allow_delegation=True,
-    llm=llm_model,
-    max_retry_limit=0, # Limit Agent retries
-    max_iter=1, # Limit tool iterations to ensure it stops on tool error
-)
-
-CompileTask = Task(
-    agent=CompilerAgent,
-    description="Process the user's program file {program} with compilerTool only once.",
-    expected_output=(
-        "If there is no error from the g++ compilation command, then return only the assembly output filename resulting from execution of the g++ compiler. "
-        "If there is any error, print the error for the user and provide some suggestions to fix it. Then, do not proceed with any other agent and stop the crew."
-    ),
-)
-
-
-################################
-### Commitment Generator Agent
-
-# Role, Goal, Backstory, LLm instance, Tool (optional)
-# commitmentGeneratorTool = tool()
-# commitmentGeneratorAgent = Agent(role="commitmentGenerator")
-# commitmentGeneratorTask = Task()
-
-# execute:
-# commitmentGenerator-method2-x86-ubuntu-targetARM program_FidesZKPLib.s
-# commitmentGenerator-method2-Mac program_FidesZKPLib.s
-
-# Role, Goal, Backstory, LLm instance, Tool (optional)
 @tool("operatingSystemTool")
 def operatingSystemTool() -> str:
     """
-    Detect the operating system and show result using Streamlit.
+    Detect the processor type and operating system. Set the environment. Then, show result using Streamlit.
     """
 
     os_type = "Unknown"
@@ -465,10 +401,133 @@ def operatingSystemTool() -> str:
 
     st.session_state['commitmentGeneratorExecutorName'] += f"-{processor_type}"
 
-    st.info(f"I've chosed this commitmentGenerator based on your operating system and CPU architecture: {st.session_state['commitmentGeneratorExecutorName']}")
+    st.info(f"I've chosen this commitmentGenerator based on your operating system and CPU architecture: {st.session_state['commitmentGeneratorExecutorName']}")
+    os.environ["os_type"] = os_type
+    os.environ["processor_type"] = processor_type
 
-    return os_type
+    return os_type, processor_type
 
+@tool("CompilerTool")
+def compilerTool(program: str) -> str:
+    """
+    Reads the user program, adds FidesZKP includes, compiles it to assembly,
+    displays progress, and provides download buttons for output files.
+    """
+
+    from pathlib import Path
+
+    filename = os.path.basename(program)
+    base_name, ext = os.path.splitext(filename)
+    ext = ext.lower()
+    filename = base_name + ext
+
+    session_dir = st.session_state['session_dir']
+
+
+    if ext == ".py":
+        language = "Python"
+    elif ext == ".cpp":
+        language = "C++"
+    else:
+        st.error(f"❌ Unsupported file extension: {ext}")
+        raise ValueError("Unsupported file extension")
+    #    return "❌ Unsupported file extension"
+    
+
+    st.write(f"📄 Detected language: **{language}**")
+
+    with open(f"{session_dir}/{program}", "r") as f1:
+        program_code = f1.read()
+
+    if language == "C++":
+        new_line = '#include "lib/fidesinnova.h"\n'
+        if new_line not in program_code:
+            modified_code = new_line + program_code
+        else:
+            modified_code = program_code
+
+        new_filename = f"{base_name}_FidesZKPLib.cpp"
+        with open(f"{session_dir}/{new_filename}", "w") as f2:
+            f2.write(modified_code)
+        st.success(f"✅ Generated instrumented file: {new_filename}")
+
+        asm_filename = f"{base_name}_FidesZKPLib.s"
+        try:
+            if os.getenv("processor_type") == "x86":
+                # arm-linux-gnueabihf-g++ is to be run on X86 and generate the assembly code for ARM prcoessors
+                command_to_execute = f"arm-linux-gnueabihf-g++ -std=c++17 -S {new_filename} -o {asm_filename}"
+            elif os.getenv("processor_type") == "arm":
+                # g++ is to be run on ARM and generate the assembly code for ARM prcoessors
+                command_to_execute = f"g++ -std=c++17 -S {new_filename} -o {asm_filename}"
+            else:
+                raise ValueError("Unsupported processor type.")
+
+            st.write(f"🛠️ Executing: `{command_to_execute}`")
+            result = subprocess.run(command_to_execute.split(), capture_output=True, text=True, cwd=session_dir, timeout=30)
+        except:
+            raise RuntimeError("Execution Error.")
+
+        if result.returncode != 0:
+            st.error("❌ Compilation failed:")
+            # st.code(result.stderr, language="bash")
+    #        return "❌ Compilation failed:"
+            raise RuntimeError(
+                f"Compilation failed!\nError Output:\n{result.stderr}"
+            )
+
+        st.success(f"✅ Compilation succeeded. Assembly file: {asm_filename}")
+
+        return asm_filename
+
+    else:
+        st.error("Only C++ is supported for now")
+ #       return "❌ Unsupported file extension"
+        raise NotImplementedError("Only C++ is supported for now")
+
+#######################################
+CompilerAgent = Agent(
+    role="Compiler",
+    goal="Execute the compilerTool tool only once. If there is any error, print the error for the user and provide some suggestions to fix it. Then, do not proceed with any other agent and stop the crew.",
+    backstory="",
+    tools=[operatingSystemTool, compilerTool],
+    allow_delegation=True,
+    llm=llm_model,
+    max_retry_limit=0, # Limit Agent retries
+    max_iter=1, # Limit tool iterations to ensure it stops on tool error
+)
+
+operatingSystemTask = Task(
+    agent=CompilerAgent,
+    description="Detect the processor type and operating system. Set the environment. Then, show result using Streamlit.",
+    expected_output="Returns os_type and processor_type.",
+    tools=[operatingSystemTool]
+)
+
+CompilerTask = Task(
+    agent=CompilerAgent,
+    description="Process the user's program file {program} with compilerTool only once.",
+    expected_output=(
+        "If there is no error from the g++ compilation command, then return only the assembly output filename resulting from execution of the g++ compiler. "
+        "If there is any error, print the error for the user and provide some suggestions to fix it. Then, do not proceed with any other agent and stop the crew."
+    ),
+    tools=[compilerTool]
+)
+
+3#####################################################
+########################################################
+### Commitment Generator Agent
+#####################################################
+
+# Role, Goal, Backstory, LLm instance, Tool (optional)
+# commitmentGeneratorTool = tool()
+# commitmentGeneratorAgent = Agent(role="commitmentGenerator")
+# commitmentGeneratorTask = Task()
+
+# execute:
+# commitmentGenerator-method2-x86-ubuntu-targetARM program_FidesZKPLib.s
+# commitmentGenerator-method2-Mac program_FidesZKPLib.s
+
+# Role, Goal, Backstory, LLm instance, Tool (optional)
 @tool("commitmentGeneratorTool")
 def commitmentGeneratorTool(program: str) -> str:
     """
@@ -479,7 +538,7 @@ def commitmentGeneratorTool(program: str) -> str:
 
     # Check if the commitmentGenerator executor file exists
     if not os.path.exists(f"{st.session_state['commitmentGeneratorExecutorName']}"):
-        st.error(f"❌ Required commitmentGenerator executor not found: {st.session_state['commitmentGeneratorExecutorName']}")
+        st.error(f"❌ Required commitmentGenerator executor not found: {st.session_state['commitmentGeneratorExecutorName']}. I don't have access to the GitHub repository to compile it. Contact info@fidesinnova.io to provide such access.")
         st.stop()  # Stop the Streamlit app execution
         sys.exit()  # Exit the Python script
 
@@ -502,21 +561,19 @@ def commitmentGeneratorTool(program: str) -> str:
 
 commitmentGeneratorAgent = Agent(role="commitmentGenerator",
                                  goal = "If there is an error from the CompilerAgent output, stop the agent and the crew. Otherwise, based on the return value of operatingSystemTool, find out which computer's operation system is currently running on the computer. If it's a mac or ubuntu, execute commitmentGeneratorTool tool. The input for this tool is the output filename from the Compiler agent. Otherwise, tell the user that you support only mac and ubuntu operating systems and you do not have a tool for the current operating system.",
-                                 backstory="",
-                                 tools = [operatingSystemTool, commitmentGeneratorTool],
+                                 backstory = "",
+                                 tools = [commitmentGeneratorTool],
                                  llm=llm_model,
                                  max_retry_limit=0, # Limit Agent retries
                                  max_iter=1, # Limit tool iterations to ensure it stops on tool error
-
                                  )
-FindingOperatingSystemTask = Task( agent = commitmentGeneratorAgent,
-                               description = "Call the operatingSystemTool with the output of the Compiler agent as the input. Then, based on the output operatingSystemTool, determine the type of operating system.",
-                               expected_output="Operating System type"
-                               )
-ExecutingCommitmentGeneratorTask = Task( agent = commitmentGeneratorAgent,
-                               description = "Based on the output of the operatingSystemTool tool, run only once the commitmentGeneratorTool.",
-                               expected_output="If the output of the tools is successful, return in a json format with keys 'commitmentFile' and 'paramFile' and 'finalAssemblyFile'. The values are the file name from the output of the tool. If there is an error, print the error for the user and provide some suggestions to fix it. Then, do not proceed with any other agent and stop the crew."
-                               )
+
+ExecutingCommitmentGeneratorTask = Task( 
+                                agent = commitmentGeneratorAgent,
+                                description = "Based on the output of the operatingSystemTool tool, run only once the commitmentGeneratorTool.",
+                                expected_output = "If the output of the tools is successful, return in a json format with keys 'commitmentFile' and 'paramFile' and 'finalAssemblyFile'. The values are the file name from the output of the tool. If there is an error, print the error for the user and provide some suggestions to fix it. Then, do not proceed with any other agent and stop the crew.",
+                                tools=[commitmentGeneratorTool]
+                                )
 
 # Commitment Submitter Agent"""
 
@@ -930,16 +987,19 @@ commitmentSubmitterAgent = Agent(role="commitmentSubmitter",
                                  max_iter=1, # Limit tool iterations to ensure it stops on tool error
                                  )
 
-commitmentSubmitterTask = Task(agent=commitmentSubmitterAgent,
-                               description="Read the commitment file from the commitmentGenerator agent, and also, read the device_config.json, then call only once the commitmentSubmitter tool to upload the commitment json file on the Fides Innova blockchain network.",
-                               expected_output="A success message indicating the commitment file has been uploaded as well as a link to the transaction on the blockchain explorer." )
+commitmentSubmitterTask = Task(
+                                agent=commitmentSubmitterAgent,
+                                description="Read the commitment file from the commitmentGenerator agent, and also, read the device_config.json, then call only once the commitmentSubmitter tool to upload the commitment json file on the Fides Innova blockchain network.",
+                                expected_output="A success message indicating the commitment file has been uploaded as well as a link to the transaction on the blockchain explorer.",
+                                tools=[commitmentSubmitterTool]                     
+                                )
 
 #############################################
 #############################################
 # Verifiable Computing Crew"""
 # Agent, Description, Expected Output
 agents = [deviceConfigAgent, CompilerAgent,  commitmentGeneratorAgent, commitmentSubmitterAgent]
-tasks =  [deviceConfigTask, CompileTask, FindingOperatingSystemTask, ExecutingCommitmentGeneratorTask, commitmentSubmitterTask]
+tasks =  [deviceConfigTask, operatingSystemTask, CompilerTask, ExecutingCommitmentGeneratorTask, commitmentSubmitterTask]
 crew1 = Crew( agents = agents, 
               tasks = tasks, 
               verbose = True,
@@ -1024,7 +1084,7 @@ if st.button("Submit to ZKP Agent"):
                 <div style='background-color:#e1f5fe;padding:10px;border-radius:5px'>
                     <ul>
                         <li>The commitment file has been uploaded to the Fides Innova blockchain. You can view the transaction on the blockchain explorer.</li>
-                        <li>Your workd id is: <strong>{st.session_state['session_id']}</strong>. Please include the work id in your future emails to info@fidesinnova.io.</li>
+                        <li>Your work id is: <strong>{st.session_state['session_id']}</strong>. Please include the work id in your future emails to info@fidesinnova.io.</li>
                         <li>The assembly file can be compiled and run on your device.</li>
                         <li>The param file contains the parameters to accelerate executing ZKP when running the program on your device.</li>
                         <li>Make an executable from the assembly file and run it on your device with the param and commitment file.</li>
