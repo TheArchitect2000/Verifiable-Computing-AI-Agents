@@ -110,35 +110,41 @@ if 'session_id' not in st.session_state:
     hash_object = hashlib.sha256(str(random_num).encode())
     hash_hex = hash_object.hexdigest()
     
+    # Folder-session name
+    import datetime
+    # create a timestamp to attach to session_id
+    timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M")
     # Shorten hash to 16 characters
-    session_id = hash_hex[:8]
+    shrt_hash = hash_hex[:4]
+    # create a timestamp to attach to session_id
+    session_id = f"s-{timestamp}-{shrt_hash}"
     st.session_state['session_id'] = session_id
     
     # Create directory with session ID
-    session_dir = Path(f"s_{session_id}")
-    session_dir.mkdir(exist_ok=True)
-    st.session_state['session_dir'] = session_dir
+    session_id = Path(session_id)
+    session_id.mkdir(exist_ok=True)
+    st.session_state['session_id'] = session_id
 
     # Get current session directory
-    session_dir = st.session_state['session_dir']
+    session_id = st.session_state['session_id']
 else:
-    session_dir = st.session_state['session_dir']
+    session_id = st.session_state['session_id']
 
 # Store uploaded file in the current directory
 program_name = ""
 if uploaded_file is not None:
     program_name = uploaded_file.name
-    with open(f"{session_dir}/{program_name}", "wb") as f:
+    with open(f"{session_id}/{program_name}", "wb") as f:
         f.write(uploaded_file.read())
     st.success(f"Uploaded and saved as {program_name}")
 
 # if the program_name file exists in the session directory, copy it to the session directory
 if program_name:
     # copy all files from /lib to the session directory
-    shutil.copytree("lib", session_dir / "lib", dirs_exist_ok=True)
-    shutil.copytree("data", session_dir / "data", dirs_exist_ok=True)
+    shutil.copytree("lib", session_id / "lib", dirs_exist_ok=True)
+    shutil.copytree("data", session_id / "data", dirs_exist_ok=True)
     # copy file class.json to the session directory
-    shutil.copy2("class.json", session_dir / "class.json")
+    shutil.copy2("class.json", session_id / "class.json")
     #st.success("Necessary files copied to the session directory.")
 
 
@@ -216,7 +222,7 @@ code_block = st.text_input("Code block", value="[33, 34]")
 
 st.markdown("<br><br>", unsafe_allow_html=True)
 
-st.info(f"System message: Session initialized with ID {st.session_state['session_dir']}.")
+st.info(f"System message: Session initialized with ID {st.session_state['session_id']}.")
 
 #################################################
 #################################################
@@ -310,11 +316,11 @@ def deviceConfigTool(myJson: str) -> str:
         st.error("❌ Error: Provided input is not valid JSON.")
         return "Error: Provided input is not valid JSON."
         
-    session_dir = st.session_state['session_dir']
+    session_id = st.session_state['session_id']
 
     # Save the config file
     config_path = "device_config.json"
-    with open(f"{session_dir}/{config_path}", "w+") as f:
+    with open(f"{session_id}/{config_path}", "w+") as f:
         json.dump(parsed, f, indent=2)
 
     st.success("✅ Device config file updated successfully.")
@@ -421,7 +427,7 @@ def compilerTool(program: str) -> str:
     ext = ext.lower()
     filename = base_name + ext
 
-    session_dir = st.session_state['session_dir']
+    session_id = st.session_state['session_id']
 
 
     if ext == ".py":
@@ -436,7 +442,7 @@ def compilerTool(program: str) -> str:
 
     st.write(f"📄 Detected language: **{language}**")
 
-    with open(f"{session_dir}/{program}", "r") as f1:
+    with open(f"{session_id}/{program}", "r") as f1:
         program_code = f1.read()
 
     if language == "C++":
@@ -447,7 +453,7 @@ def compilerTool(program: str) -> str:
             modified_code = program_code
 
         new_filename = f"{base_name}_FidesZKPLib.cpp"
-        with open(f"{session_dir}/{new_filename}", "w") as f2:
+        with open(f"{session_id}/{new_filename}", "w") as f2:
             f2.write(modified_code)
         st.success(f"✅ Generated instrumented file: {new_filename}")
 
@@ -463,7 +469,7 @@ def compilerTool(program: str) -> str:
                 raise ValueError("Unsupported processor type.")
 
             st.write(f"🛠️ Executing: `{command_to_execute}`")
-            result = subprocess.run(command_to_execute.split(), capture_output=True, text=True, cwd=session_dir, timeout=30)
+            result = subprocess.run(command_to_execute.split(), capture_output=True, text=True, cwd=session_id, timeout=30)
         except:
             raise RuntimeError("Execution Error.")
 
@@ -534,11 +540,11 @@ def commitmentGeneratorTool(program: str) -> str:
     Run the commitment generator and display results in Streamlit.
     """
 
-    session_dir = st.session_state['session_dir']
+    session_id = st.session_state['session_id']
 
     # Check if the commitmentGenerator executor file exists
     if not os.path.exists(f"{st.session_state['commitmentGeneratorExecutorName']}"):
-        st.error(f"❌ Required commitmentGenerator executor not found: {st.session_state['commitmentGeneratorExecutorName']}. I don't have access to the GitHub repository to compile it. Contact info@fidesinnova.io to provide such access.")
+        st.error(f"❌ Required commitmentGenerator executor not found: {st.session_state['commitmentGeneratorExecutorName']}. I don't have access to the GitHub repository to compile it. Contact info@fidesinnova.io to provide this access.")
         st.stop()  # Stop the Streamlit app execution
         sys.exit()  # Exit the Python script
 
@@ -546,7 +552,7 @@ def commitmentGeneratorTool(program: str) -> str:
     command_to_execute = f"../{st.session_state['commitmentGeneratorExecutorName']} {program}"
     st.write(f"🛠️ Executing: `{command_to_execute[3:]}`")
 
-    result = subprocess.run(command_to_execute.split(), capture_output=True, text=True, cwd=session_dir, timeout=30)
+    result = subprocess.run(command_to_execute.split(), capture_output=True, text=True, cwd=session_id, timeout=30)
 
     if result.returncode != 0:
         st.error("❌ Commitment generation failed:")
@@ -625,16 +631,16 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
     # get the final assembly file name
     finalAssemblyFile = generatorAgentOutput["finalAssemblyFile"]
 
-    session_dir = st.session_state['session_dir']
+    session_id = st.session_state['session_id']
 
     # check if the param file exists
-    if not os.path.exists(f"{session_dir}/{paramFile}"):
+    if not os.path.exists(f"{session_id}/{paramFile}"):
         st.error(f"❌ Required param file not found: {paramFile}")
         raise RuntimeError(f"{paramFile} param file not found in the current directory.")
     else:
         st.success(f"✅ Required param file found: {paramFile}")
         st.session_state["paramFile"] = paramFile
-        with open(f"{session_dir}/{paramFile}", "r") as f2:
+        with open(f"{session_id}/{paramFile}", "r") as f2:
             params = json.load(f2)
         # Check if the param data is valid
         if not isinstance(params, dict):
@@ -643,7 +649,7 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
         else:
             st.success(f"✅ {paramFile} file is valid.")
     # do the same checking for the final assembly file
-    if not os.path.exists(f"{session_dir}/{finalAssemblyFile}"):
+    if not os.path.exists(f"{session_id}/{finalAssemblyFile}"):
         st.error(f"❌ Required final assembly file not found: {finalAssemblyFile}")
         raise FileNotFoundError(f"{finalAssemblyFile} final assembly file not found in the current directory.")
     else:
@@ -655,7 +661,7 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
 
     # do the same checking for the commitment file
     # check if the commitment file exists
-    if not os.path.exists(f"{session_dir}/{commitmentFile}"):
+    if not os.path.exists(f"{session_id}/{commitmentFile}"):
         st.error(f"❌ Required commitment file not found: {commitmentFile}")
         raise FileNotFoundError(f"{commitmentFile} file not found in the current directory.")
     else:
@@ -663,7 +669,7 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
         st.success(f"✅ Required commitment file found: {commitmentFile}")
         
     # load the commitment file
-    with open(f"{session_dir}/{commitmentFile}", "r") as f1:
+    with open(f"{session_id}/{commitmentFile}", "r") as f1:
         commitmentData = f1.read()
     # Check if the commitment file is a valid json file
     try:
@@ -685,7 +691,7 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
         raise ValueError("Invalid commitment data. It should not be smaller than 10 bytes.")
 
     # do the same checking for the device_config.json file
-    if not os.path.exists(f"{session_dir}/device_config.json"):
+    if not os.path.exists(f"{session_id}/device_config.json"):
         st.error(f"❌ Required device_config.json file not found.")
         raise FileNotFoundError(f"device_config.json file not found. Please make sure it is in the current directory.")
     else:
@@ -693,7 +699,7 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
     # load the device_config.json file
     # Check if the device_config.json file is a valid json file
     try:
-        with open(f"{session_dir}/device_config.json", "r") as f2:
+        with open(f"{session_id}/device_config.json", "r") as f2:
             device_config = json.load(f2)
     except json.JSONDecodeError:
         st.error("❌ Invalid device_config.json file. It should be a valid json file.")
@@ -840,11 +846,11 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
 
         # Check if the AgentAIMiniCode_FidesZKPLib_commitment.json file exists
 
-        if not os.path.exists(f"{session_dir}/{commitmentFile}"):
+        if not os.path.exists(f"{session_id}/{commitmentFile}"):
             st.error(f"❌ Required commitment file not found: {commitmentFile}")
             raise FileNotFoundError(f"{commitmentFile} file not found. Please make sure it is in the current directory.")
         # read the commitment_id from the commitmentId in the AgentAIMiniCode_FidesZKPLib_commitment.json file
-        with open(f"{session_dir}/{commitmentFile}", "r") as f1:
+        with open(f"{session_id}/{commitmentFile}", "r") as f1:
             commitmentData = json.load(f1)
         commitment_id = commitmentData.get("commitmentId")
         if not commitment_id:
@@ -1056,8 +1062,8 @@ if st.button("Submit to ZKP Agent"):
                 status.update(label="All tasks completed successfully!", state="complete")
 
                 config_path = st.session_state["config_path"]
-                if os.path.exists(f"{session_dir}/{config_path}"):
-                    with open(f"{session_dir}/{config_path}", "rb") as f:
+                if os.path.exists(f"{session_id}/{config_path}"):
+                    with open(f"{session_id}/{config_path}", "rb") as f:
                         data = f.read()
                     b64 = base64.b64encode(data).decode()
                     href = f'<a href="data:application/octet-stream;base64,{b64}" download="device_config.json">📥 Download device_config.json</a>'
@@ -1070,7 +1076,7 @@ if st.button("Submit to ZKP Agent"):
                     if not output_file:
                         st.warning("No output file generated.")
                         continue
-                    path = Path(f"{session_dir}/{output_file}")
+                    path = Path(f"{session_id}/{output_file}")
                     if path.exists():
                         with open(path, "rb") as f:
                             data = f.read()
