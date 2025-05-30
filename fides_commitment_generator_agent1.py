@@ -51,25 +51,23 @@ with st.sidebar:
         unsafe_allow_html=True
     )
 
-    st.markdown("---", unsafe_allow_html=True)
+st.markdown("---", unsafe_allow_html=True)
 
- #   st.markdown("### 🔗 Links", unsafe_allow_html=True)
-    st.markdown(
-        """
-        <div style="color:white">
-        <h3>🔗 Links</h3>
-        <ul>
-            <li><a href="https://www.fidesinnova.io" target="_blank" style="color:white;">🌐 Fides Innova Website</a></li>
-            <li><a href="https://x.com/fidesinnova" target="_blank" style="color:white;">🐦 Fides Innova on X</a></li>
-            <li><a href="https://www.youtube.com/@fidesinnova" target="_blank" style="color:white;">📺 YouTube Channel</a></li>
-            <li><a href="https://github.com/TheArchitect2000/iot-server" target="_blank" style="color:white;">💻 GitHub IoT Server</a></li>
-            <li><a href="https://github.com/TheArchitect2000/zkiot-arm-siemens-iot2050-c" target="_blank" style="color:white;">💻 ZKP Device Integration</a></li>
-            <li><a href="https://github.com/TheArchitect2000/Fides-Innova-WiKi?tab=readme-ov-file#fidesinnova-wiki" target="_blank" style="color:white;">📘 Wiki</a></li>
-        </ul>
-        </div>""",
-        unsafe_allow_html=True
-    )
-
+ # st.markdown("### 🔗 Links", unsafe_allow_html=True)
+st.markdown("""
+            <div style="color:white">
+            <h3>🔗 Links</h3>
+            <ul>
+                <li><a href="https://www.fidesinnova.io" target="_blank" style="color:white;">🌐 Fides Innova Website</a></li>
+                <li><a href="https://x.com/fidesinnova" target="_blank" style="color:white;">🐦 Fides Innova on X</a></li>
+                <li><a href="https://www.youtube.com/@fidesinnova" target="_blank" style="color:white;">📺 YouTube Channel</a></li>
+                <li><a href="https://github.com/TheArchitect2000/iot-server" target="_blank" style="color:white;">💻 GitHub IoT Server</a></li>
+                <li><a href="https://github.com/TheArchitect2000/zkiot-arm-siemens-iot2050-c" target="_blank" style="color:white;">💻 ZKP Device Integration</a></li>
+                <li><a href="https://github.com/TheArchitect2000/Fides-Innova-WiKi?tab=readme-ov-file#fidesinnova-wiki" target="_blank" style="color:white;">📘 Wiki</a></li>
+            </ul>
+            </div>""",
+            unsafe_allow_html=True
+            )
 
 st.title("ZKP Commitment Generator Agent")
 
@@ -236,6 +234,7 @@ from langchain_openai import ChatOpenAI
 # Initialize the OpenAI model
 llm_model = ChatOpenAI(
     model="gpt-4o-mini",
+    model="gpt-4",
     temperature=0.1,
     max_tokens=4096,
     streaming=True,
@@ -410,6 +409,7 @@ CompileTask = Task(
     ),
 )
 
+
 ################################
 ### Commitment Generator Agent
 
@@ -481,7 +481,6 @@ def commitmentGeneratorTool(program: str) -> str:
     # Check if the commitmentGenerator executor file exists
     if not os.path.exists(f"{st.session_state['commitmentGeneratorExecutorName']}"):
         st.error(f"❌ Required commitmentGenerator executor not found: {st.session_state['commitmentGeneratorExecutorName']}")
-        raise RuntimeError(f"commitmentGenerator executor '{st.session_state['commitmentGeneratorExecutorName']}' not found in the parent directory. Please contact info@fidesinnova.io for further instructions.")
 
     st.write(f"program: {program}")
     command_to_execute = f"../{st.session_state['commitmentGeneratorExecutorName']} {program}"
