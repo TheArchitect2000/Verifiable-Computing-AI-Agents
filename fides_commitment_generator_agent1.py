@@ -233,7 +233,6 @@ from langchain_openai import ChatOpenAI
 
 # Initialize the OpenAI model
 llm_model = ChatOpenAI(
-    model="gpt-4o-mini",
     model="gpt-4",
     temperature=0.1,
     max_tokens=4096,
@@ -481,6 +480,8 @@ def commitmentGeneratorTool(program: str) -> str:
     # Check if the commitmentGenerator executor file exists
     if not os.path.exists(f"{st.session_state['commitmentGeneratorExecutorName']}"):
         st.error(f"❌ Required commitmentGenerator executor not found: {st.session_state['commitmentGeneratorExecutorName']}")
+        st.stop()  # Stop the Streamlit app execution
+        sys.exit()  # Exit the Python script
 
     st.write(f"program: {program}")
     command_to_execute = f"../{st.session_state['commitmentGeneratorExecutorName']} {program}"
