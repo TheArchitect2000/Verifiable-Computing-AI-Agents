@@ -90,16 +90,28 @@ st.markdown("""
 
 # st.write(os.getcwd())
 
-st.markdown("<br><br>", unsafe_allow_html=True)
-st.markdown("""
-<div style="background-color:#f5f5f5;padding:10px;border-radius:6px;margin-bottom:10px;">
-  <p style="font-size:16px;">
-    <strong>Step 1: </strong>Select the <strong>program file</strong> where you want to add ZKP generation code.
-  </p>
-</div>
-""", unsafe_allow_html=True)
-# File uploader for program file
-uploaded_file = st.file_uploader("Upload your program file (.cpp or .py)", type=["cpp", "py"])
+if "step" not in st.session_state:
+    st.session_state.step = 1
+
+def next_step():
+    st.session_state.step += 1
+
+if st.session_state.step == 1:
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("""
+    <div style="background-color:#f5f5f5;padding:10px;border-radius:6px;margin-bottom:10px;">
+    <p style="font-size:16px;">
+        <strong>Step 1: </strong>Select the <strong>program file</strong> where you want to add ZKP generation code.
+    </p>
+    </div>
+    """, unsafe_allow_html=True)
+    # File uploader for program file
+    program = st.file_uploader("Upload your program file (.cpp or .py)", type=["cpp", "py"])
+    if program is not None:
+        st.write("Selected file:",  program.name)
+        st.session_state["program_name"] = program.name
+        st.session_state["program"] = program
+        next_step()
 
 st.markdown("<br><br>", unsafe_allow_html=True)
 
@@ -131,98 +143,115 @@ else:
     session_id = st.session_state['session_id']
 
 # Store uploaded file in the current directory
-program_name = ""
-if uploaded_file is not None:
-    program_name = uploaded_file.name
+program_name = st.session_state.get("program_name", None)
+st.write(f"program_name: {program_name}")
+st.write(f"session_id: {session_id}")
+
+if program_name is not None:
+    st.write(f"file: {session_id}/{program_name}")
     with open(f"{session_id}/{program_name}", "wb") as f:
-        f.write(uploaded_file.read())
+        f.write(f.read())
     st.success(f"Uploaded and saved as {program_name}")
 
 # if the program_name file exists in the session directory, copy it to the session directory
-if program_name:
-    # copy all files from /lib to the session directory
-    shutil.copytree("lib", session_id / "lib", dirs_exist_ok=True)
-    shutil.copytree("data", session_id / "data", dirs_exist_ok=True)
-    # copy file class.json to the session directory
-    shutil.copy2("class.json", session_id / "class.json")
-    #st.success("Necessary files copied to the session directory.")
+# copy all files from /lib to the session directory
+shutil.copytree("lib", session_id / "lib", dirs_exist_ok=True)
+shutil.copytree("data", session_id / "data", dirs_exist_ok=True)
+# copy file class.json to the session directory
+shutil.copy2("class.json", session_id / "class.json")
+#st.success("Necessary files copied to the session directory.")
+
+if st.session_state.step == 2:
+    # Target processor selection
+    st.markdown("""
+    <div style="background-color:#f5f5f5;padding:10px;border-radius:6px;margin-bottom:10px;">
+    <p style="font-size:16px;">
+        <strong>Step 2: </strong>Select the <strong>processor type</strong> for your device. The agent will generate <strong>assembly code</strong> tailored to your selected architecture.
+        You will receive the final <code>.s</code> (assembly) file, which you can compile into an executable for your specific hardware.
+    </p>
+    </div>
+    """, unsafe_allow_html=True)
+    processor = st.selectbox(
+        "Processor Type of Your IoT Device or Target Machine",
+        ["RiscV", "ARM"],
+        index=1
+    )
+
+    if processor in ["RiscV", "ARM"]:
+        next_step()
 
 
-# Target processor selection
-st.markdown("""
-<div style="background-color:#f5f5f5;padding:10px;border-radius:6px;margin-bottom:10px;">
-  <p style="font-size:16px;">
-    <strong>Step 2: </strong>Select the <strong>processor type</strong> for your device. The agent will generate <strong>assembly code</strong> tailored to your selected architecture.
-    You will receive the final <code>.s</code> (assembly) file, which you can compile into an executable for your specific hardware.
-  </p>
-</div>
-""", unsafe_allow_html=True)
-processor = st.selectbox(
-    "Processor Type of Your IoT Device or Target Machine",
-    ["RiscV", "ARM"],
-    index=1
-)
+if st.session_state.step == 3:
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    # We have two methods to execute your code on a device. Embedded-ZKP mode and Assisted-Trigger mode. In Embedded ZKP mode, your final executable code will generate ZKP. In this method, our agent will our ZKP generation library to your code and 
+    # it increase the size of your program. In Assisted Trigger mode, we will not add our ZKp SDK to your code and only will add some tages to your code to let a dubger knows when you want to start ZKP generation process. This method
+    # will add a minimum number of opcodes to your program and your program size will not incrase. however, the execution of yur program on your device will be paused for a short period (a few nano sec) to read the processor register values.
+    st.markdown("""
+    <div style="background-color:#f4f4f4;padding:15px;border-radius:8px;">
+    <p style="font-size:16px;"><strong>Step 3: Execution Mode to Generate ZKP:</strong> We offer two modes for executing your program on a device: <strong>Embedded-ZKP</strong> and <strong>Assisted-Trigger</strong>.</p>
+    <ul style="font-size:15px;">
+        <li><strong>Embedded-ZKP:</strong> The agent injects the full ZKP generation library into your code. Your final executable can independently generate ZKPs, but this increases the program size.</li>
+        <li><strong>Assisted-Trigger:</strong> The agent adds lightweight markers to your code to signal when ZKP generation should begin. This approach keeps your program size minimal but briefly pauses execution (a few nanoseconds) to capture processor register values.</li>
+    </ul>
+    </div>
+    """, unsafe_allow_html=True)
+    generation_method = st.selectbox(
+        "Execution Mode to Generate ZKP",
+        ["Embedded-ZKP", "Assisted-Trigger"],
+        index=1
+    )
 
+    if generation_method in ["Embedded-ZKP", "Assisted-Trigger"]:
+        next_step()
 
-st.markdown("<br><br>", unsafe_allow_html=True)
-# We have two methods to execute your code on a device. Embedded-ZKP mode and Assisted-Trigger mode. In Embedded ZKP mode, your final executable code will generate ZKP. In this method, our agent will our ZKP generation library to your code and 
-# it increase the size of your program. In Assisted Trigger mode, we will not add our ZKp SDK to your code and only will add some tages to your code to let a dubger knows when you want to start ZKP generation process. This method
-# will add a minimum number of opcodes to your program and your program size will not incrase. however, the execution of yur program on your device will be paused for a short period (a few nano sec) to read the processor register values.
-st.markdown("""
-<div style="background-color:#f4f4f4;padding:15px;border-radius:8px;">
-  <p style="font-size:16px;"><strong>Step 3: Execution Mode to Generate ZKP:</strong> We offer two modes for executing your program on a device: <strong>Embedded-ZKP</strong> and <strong>Assisted-Trigger</strong>.</p>
+if st.session_state.step == 4:
+    # set commitmentGenerator execution file in session
+    st.session_state['commitmentGeneratorExecutorName'] = f"commitmentGenerator-{generation_method}-{processor}"
 
-  <ul style="font-size:15px;">
-    <li><strong>Embedded-ZKP:</strong> The agent injects the full ZKP generation library into your code. Your final executable can independently generate ZKPs, but this increases the program size.</li>
-    <li><strong>Assisted-Trigger:</strong> The agent adds lightweight markers to your code to signal when ZKP generation should begin. This approach keeps your program size minimal but briefly pauses execution (a few nanoseconds) to capture processor register values.</li>
-  </ul>
-</div>
-""", unsafe_allow_html=True)
-generation_method = st.selectbox(
-    "Execution Mode to Generate ZKP",
-    ["Embedded-ZKP", "Assisted-Trigger"],
-    index=1
-)
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    # Class input as a slider between 1 and 16
+    st.markdown("""
+    <div style="background-color:#f4f4f4;padding:15px;border-radius:8px;">
+    <p style="font-size:16px;"><strong>Step 4: ZKP Class:</strong> We offer 16 ZKP classes. To learn about these classes, please refer to our Wiki page.</p>
+    </div>
+    """, unsafe_allow_html=True)
+    program_class = st.slider("ZKP class", min_value=1, max_value=16, value=1)
 
-# set commitmentGenerator execution file in session
-st.session_state['commitmentGeneratorExecutorName'] = f"commitmentGenerator-{generation_method}-{processor}"
+    if processor in range(1, 17):
+        next_step()
 
-st.markdown("<br><br>", unsafe_allow_html=True)
-# Class input as a slider between 1 and 16
-st.markdown("""
-<div style="background-color:#f4f4f4;padding:15px;border-radius:8px;">
-  <p style="font-size:16px;"><strong>Step 4: ZKP Class:</strong> We offer 16 ZKP classes. To learn about these classes, please refer to our Wiki page.</p>
-</div>
-""", unsafe_allow_html=True)
-program_class = st.slider("ZKP class", min_value=1, max_value=16, value=1)
+if st.session_state.step == 5:
+    st.markdown("<br><br>", unsafe_allow_html=True) 
+    
+    # Other metadata fields
+    st.markdown("""
+    <div style="background-color:#f4f4f4;padding:15px;border-radius:8px;">
+    <p style="font-size:16px;"><strong>Step 5: Device Specifications:</strong></p>
+    </div>
+    """, unsafe_allow_html=True)
 
-st.markdown("<br><br>", unsafe_allow_html=True)
+    device_type = st.text_input("Device type", value="Sensor")
+    device_id_type = st.text_input("Device ID type", value="MAC")
+    device_model = st.text_input("Device model", value="Siemens IOT2050")
+    manufacturer = st.text_input("Manufacturer", value="Fides")
+    software_version = st.text_input("Software version", value="1.0")
 
-# Other metadata fields
-st.markdown("""
-<div style="background-color:#f4f4f4;padding:15px;border-radius:8px;">
-  <p style="font-size:16px;"><strong>Step 5: Device Specifications:</strong></p>
-</div>
-""", unsafe_allow_html=True)
+    if device_type and device_id_type and device_model and manufacturer and software_version:
+        next_step()
 
-device_type = st.text_input("Device type", value="Sensor")
-device_id_type = st.text_input("Device ID type", value="MAC")
-device_model = st.text_input("Device model", value="Siemens IOT2050")
-manufacturer = st.text_input("Manufacturer", value="Fides")
-software_version = st.text_input("Software version", value="1.0")
+if st.session_state.step == 6:
 
-st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
 
-st.markdown("""
-<div style="background-color:#f4f4f4;padding:15px;border-radius:8px;">
-  <p style="font-size:16px;"><strong>Step 6: Code Block:</strong> Which parts of your code require ZKP generation? If you’re using a device like the Siemens IoT2050, you can afford a larger code block. For smaller processors such as the ESP32C6, consider using smaller code segments to optimize performance. </p>
-</div>
-""", unsafe_allow_html=True)
-code_block = st.text_input("Code block", value="[33, 34]")
+    st.markdown("""
+    <div style="background-color:#f4f4f4;padding:15px;border-radius:8px;">
+    <p style="font-size:16px;"><strong>Step 6: Code Block:</strong> Which parts of your code require ZKP generation? If you’re using a device like the Siemens IoT2050, you can afford a larger code block. For smaller processors such as the ESP32C6, consider using smaller code segments to optimize performance. </p>
+    </div>
+    """, unsafe_allow_html=True)
+    code_block = st.text_input("Code block", value="[33, 34]")
 
-st.markdown("<br><br>", unsafe_allow_html=True)
-
-st.info(f"System message: Session initialized with ID {st.session_state['session_id']}.")
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.info(f"System message: Session initialized with ID {st.session_state['session_id']}.")
 
 #################################################
 #################################################
@@ -1053,7 +1082,7 @@ if st.button("Submit to ZKP Agent"):
                     "deviceType": device_type or "sensor",
                     "deviceIdType": device_id_type or "MAC",
                     "deviceModel": device_model or "Siemens IOT2050",
-                    "manufacturer": manufacturer or "FDS",
+                    "manufacturer": manufacturer or "Fides Agent",
                     "softwareVersion": software_version or "1.0",
                     "code_block": code_block or "[33, 34]"
                 })
