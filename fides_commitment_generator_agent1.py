@@ -72,7 +72,12 @@ with st.sidebar:
 
 ########### Starting the main page ########################
 st.title("ZKP Commitment Generator Agent")
+if "processor" not in st.session_state:
+    st.session_state["processor"] = "" 
 
+if "generation_method" not in st.session_state:
+    st.session_state["generation_method"] = "" 
+    
 st.markdown("""
 <div style="background-color:#f5f5f5;padding:15px;border-radius:8px;">
   <p style="font-size:16px;">
@@ -88,15 +93,15 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+if "commitmentGeneratorExecutorName" not in st.session_state:
+    st.session_state["commitmentGeneratorExecutorName"] = "" 
+
+if "device_config_data_set" not in st.session_state:
+    st.session_state["device_config_data_set"] = False
+
 # st.write(os.getcwd())
 
-if "step" not in st.session_state:
-    st.session_state.step = 1
-
-def next_step():
-    st.session_state.step += 1
-
-if st.session_state.step == 1:
+if True:
     st.markdown("<br><br>", unsafe_allow_html=True)
     st.markdown("""
     <div style="background-color:#f5f5f5;padding:10px;border-radius:6px;margin-bottom:10px;">
@@ -108,60 +113,60 @@ if st.session_state.step == 1:
     # File uploader for program file
     program = st.file_uploader("Upload your program file (.cpp or .py)", type=["cpp", "py"])
     if program is not None:
-        st.write("Selected file:",  program.name)
         st.session_state["program_name"] = program.name
         st.session_state["program"] = program
-        next_step()
+        st.session_state["processor"] = ""
+        st.session_state["generation_method"] = ""
 
-st.markdown("<br><br>", unsafe_allow_html=True)
+    # Initialize session state if not exists
+    if 'session_id' not in st.session_state:
+        # Generate random number and create hash
+        random_num = random.getrandbits(128)
+        hash_object = hashlib.sha256(str(random_num).encode())
+        hash_hex = hash_object.hexdigest()
+        
+        # Folder-session name
+        import datetime
+        # create a timestamp to attach to session_id
+        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M")
+        # Shorten hash to 16 characters
+        shrt_hash = hash_hex[:4]
+        # create a timestamp to attach to session_id
+        session_id = f"s-{timestamp}-{shrt_hash}"
+        st.session_state['session_id'] = session_id
+        
+        # Create directory with session ID
+        session_id = Path(session_id)
+        session_id.mkdir(exist_ok=True)
+        st.session_state['session_id'] = session_id
 
-# Initialize session state if not exists
-if 'session_id' not in st.session_state:
-    # Generate random number and create hash
-    random_num = random.getrandbits(128)
-    hash_object = hashlib.sha256(str(random_num).encode())
-    hash_hex = hash_object.hexdigest()
-    
-    # Folder-session name
-    import datetime
-    # create a timestamp to attach to session_id
-    timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M")
-    # Shorten hash to 16 characters
-    shrt_hash = hash_hex[:4]
-    # create a timestamp to attach to session_id
-    session_id = f"s-{timestamp}-{shrt_hash}"
-    st.session_state['session_id'] = session_id
-    
-    # Create directory with session ID
-    session_id = Path(session_id)
-    session_id.mkdir(exist_ok=True)
-    st.session_state['session_id'] = session_id
+        # Get current session directory
+        session_id = st.session_state['session_id']
+    else:
+        session_id = st.session_state['session_id']
 
-    # Get current session directory
-    session_id = st.session_state['session_id']
-else:
-    session_id = st.session_state['session_id']
+    # Store uploaded file in the current directory
+    program_name = st.session_state.get("program_name", None)
+    # st.write(f"program_name: {program_name}")
+    # st.write(f"session_id: {session_id}")
 
-# Store uploaded file in the current directory
-program_name = st.session_state.get("program_name", None)
-st.write(f"program_name: {program_name}")
-st.write(f"session_id: {session_id}")
+    if program_name is not None:
+        full_path=f"{session_id}/{program_name}"
+        with open(full_path, "wb") as f:
+            f.write(st.session_state["program"].read())
+        st.success(f"Uploaded and saved as {program_name}")
+
+    # if the program_name file exists in the session directory, copy it to the session directory
+    # copy all files from /lib to the session directory
+    shutil.copytree("lib", session_id / "lib", dirs_exist_ok=True)
+    shutil.copytree("data", session_id / "data", dirs_exist_ok=True)
+    # copy file class.json to the session directory
+    shutil.copy2("class.json", session_id / "class.json")
+    #st.success("Necessary files copied to the session directory.")
+
+    st.markdown("<br><br>", unsafe_allow_html=True)
 
 if program_name is not None:
-    st.write(f"file: {session_id}/{program_name}")
-    with open(f"{session_id}/{program_name}", "wb") as f:
-        f.write(f.read())
-    st.success(f"Uploaded and saved as {program_name}")
-
-# if the program_name file exists in the session directory, copy it to the session directory
-# copy all files from /lib to the session directory
-shutil.copytree("lib", session_id / "lib", dirs_exist_ok=True)
-shutil.copytree("data", session_id / "data", dirs_exist_ok=True)
-# copy file class.json to the session directory
-shutil.copy2("class.json", session_id / "class.json")
-#st.success("Necessary files copied to the session directory.")
-
-if st.session_state.step == 2:
     # Target processor selection
     st.markdown("""
     <div style="background-color:#f5f5f5;padding:10px;border-radius:6px;margin-bottom:10px;">
@@ -171,21 +176,29 @@ if st.session_state.step == 2:
     </p>
     </div>
     """, unsafe_allow_html=True)
-    processor = st.selectbox(
-        "Processor Type of Your IoT Device or Target Machine",
-        ["RiscV", "ARM"],
-        index=1
-    )
+  
+    st.write(st.session_state["processor"])
+    if st.session_state["processor"] in ["RiscV", "ARM"]:
+        # st.session_state["processor"] = st.selectbox(
+        #     "Processor Type of Your IoT Device or Target Machine",
+        #     ["RiscV", "ARM"])
+        st.write("We are in if")
+        st.write(st.session_state["processor"])
+    else:
+        st.session_state["processor"] = st.selectbox(
+            "Processor Type of Your IoT Device or Target Machine",
+            ["","RiscV", "ARM"],
+            index=0)
+        st.write("We are in ELSE")
+        st.write(st.session_state["step"])
+    
+st.markdown("<br><br>", unsafe_allow_html=True)
 
-    if processor in ["RiscV", "ARM"]:
-        next_step()
-
-
-if st.session_state.step == 3:
+if st.session_state["processor"]:
     st.markdown("<br><br>", unsafe_allow_html=True)
     # We have two methods to execute your code on a device. Embedded-ZKP mode and Assisted-Trigger mode. In Embedded ZKP mode, your final executable code will generate ZKP. In this method, our agent will our ZKP generation library to your code and 
     # it increase the size of your program. In Assisted Trigger mode, we will not add our ZKp SDK to your code and only will add some tages to your code to let a dubger knows when you want to start ZKP generation process. This method
-    # will add a minimum number of opcodes to your program and your program size will not incrase. however, the execution of yur program on your device will be paused for a short period (a few nano sec) to read the processor register values.
+    # will add a minimum number of opcodes to your program and your program size will not increase. however, the execution of yur program on your device will be paused for a short period (a few nano sec) to read the processor register values.
     st.markdown("""
     <div style="background-color:#f4f4f4;padding:15px;border-radius:8px;">
     <p style="font-size:16px;"><strong>Step 3: Execution Mode to Generate ZKP:</strong> We offer two modes for executing your program on a device: <strong>Embedded-ZKP</strong> and <strong>Assisted-Trigger</strong>.</p>
@@ -195,19 +208,21 @@ if st.session_state.step == 3:
     </ul>
     </div>
     """, unsafe_allow_html=True)
-    generation_method = st.selectbox(
-        "Execution Mode to Generate ZKP",
-        ["Embedded-ZKP", "Assisted-Trigger"],
-        index=1
-    )
 
-    if generation_method in ["Embedded-ZKP", "Assisted-Trigger"]:
-        next_step()
+    if st.session_state["generation_method"] in ["Embedded-ZKP", "Assisted-Trigger"]:
+        st.session_state["generation_method"] = st.selectbox(
+                    "Execution Mode to Generate ZKP",
+                    ["Embedded-ZKP", "Assisted-Trigger"])
+    else:
+        st.session_state["generation_method"] = st.selectbox(
+            "Execution Mode to Generate ZKP",
+            ["", "Embedded-ZKP", "Assisted-Trigger"],
+            index=0)
 
-if st.session_state.step == 4:
+if st.session_state["generation_method"]:
     # set commitmentGenerator execution file in session
-    st.session_state['commitmentGeneratorExecutorName'] = f"commitmentGenerator-{generation_method}-{processor}"
-
+    st.session_state['commitmentGeneratorExecutorName'] = f"commitmentGenerator-{st.session_state['generation_method']}-{st.session_state['processor']}"
+    
     st.markdown("<br><br>", unsafe_allow_html=True)
     # Class input as a slider between 1 and 16
     st.markdown("""
@@ -217,18 +232,15 @@ if st.session_state.step == 4:
     """, unsafe_allow_html=True)
     program_class = st.slider("ZKP class", min_value=1, max_value=16, value=1)
 
-    if processor in range(1, 17):
-        next_step()
-
-if st.session_state.step == 5:
+if st.session_state['commitmentGeneratorExecutorName']:
     st.markdown("<br><br>", unsafe_allow_html=True) 
     
     # Other metadata fields
     st.markdown("""
-    <div style="background-color:#f4f4f4;padding:15px;border-radius:8px;">
-    <p style="font-size:16px;"><strong>Step 5: Device Specifications:</strong></p>
-    </div>
-    """, unsafe_allow_html=True)
+                <div style="background-color:#f4f4f4;padding:15px;border-radius:8px;">
+                <p style="font-size:16px;"><strong>Step 5: Device Specifications:</strong></p>
+                </div>
+                """, unsafe_allow_html=True)
 
     device_type = st.text_input("Device type", value="Sensor")
     device_id_type = st.text_input("Device ID type", value="MAC")
@@ -237,11 +249,10 @@ if st.session_state.step == 5:
     software_version = st.text_input("Software version", value="1.0")
 
     if device_type and device_id_type and device_model and manufacturer and software_version:
-        next_step()
-
-if st.session_state.step == 6:
-
+        st.session_state["device_config_data_set"] = True
     st.markdown("<br><br>", unsafe_allow_html=True)
+
+if st.session_state["device_config_data_set"]:
 
     st.markdown("""
     <div style="background-color:#f4f4f4;padding:15px;border-radius:8px;">
