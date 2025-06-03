@@ -42,9 +42,7 @@ with st.sidebar:
     st.markdown(
         """
         <div style="text-align: center;">
-            <img src="https://panel.zksensor.tech/img/logo/logo-dark-full.png" width="250">
-            <div style="font-size: 28px; font-weight: bold; margin-top: 14px; color: white;">
-                Fides Innova<br>ZKP Commitment Generator Agent
+            <img src="https://fidesinnova.io/Fides-Innova-Logo.png" width="250">
             </div>
         </div>
         """,
@@ -56,14 +54,15 @@ with st.sidebar:
     # st.markdown("### 🔗 Links", unsafe_allow_html=True)
     st.markdown("""
                 <div style="color:white">
-                <h3>🔗 Links</h3>
+                <h3>🔗 More resources</h3>
                 <ul>
-                    <li><a href="https://www.fidesinnova.io" target="_blank" style="color:white;">🌐 Fides Innova Website</a></li>
-                    <li><a href="https://x.com/fidesinnova" target="_blank" style="color:white;">🐦 Fides Innova on X</a></li>
-                    <li><a href="https://www.youtube.com/@fidesinnova" target="_blank" style="color:white;">📺 YouTube Channel</a></li>
-                    <li><a href="https://github.com/TheArchitect2000/iot-server" target="_blank" style="color:white;">💻 GitHub IoT Server</a></li>
+                    <li><a href="https://www.fidesinnova.io" target="_blank" style="color:white;">🌐 Website</a></li>
+                    <li><a href="https://x.com/fidesinnova" target="_blank" style="color:white;">🐦 X</a></li>
+                    <li><a href="https://www.youtube.com/@fidesinnova" target="_blank" style="color:white;">📺 YouTube</a></li>
+                    <li><a href="https://github.com/TheArchitect2000/iot-server" target="_blank" style="color:white;">💻 IoT Server GitHub</a></li>
                     <li><a href="https://github.com/TheArchitect2000/zkiot-arm-siemens-iot2050-c" target="_blank" style="color:white;">💻 ZKP Device Integration</a></li>
                     <li><a href="https://github.com/TheArchitect2000/Fides-Innova-WiKi?tab=readme-ov-file#fidesinnova-wiki" target="_blank" style="color:white;">📘 Wiki</a></li>
+                    <li><a href="http://llm.fidesinnova.io:8501" target="_blank" style="color:white;">📘 Fides AI Assistance</a></li>
                 </ul>
                 </div>""",
                 unsafe_allow_html=True
@@ -71,7 +70,17 @@ with st.sidebar:
 
 
 ########### Starting the main page ########################
-st.title("ZKP Commitment Generator Agent")
+#st.title("ZKP Commitment Generator Agent")
+st.markdown(
+    """
+    <div style="display: flex; align-items: center;">
+        <img src="https://fidesinnova.io/Fides-Innova-Agent-2.png" width="100" style="margin-right: 15px;" />
+        <h2 style="margin: 0;">ZKP Commitment Generator Agent</h2>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 if "processor" not in st.session_state:
     st.session_state["processor"] = "" 
 
@@ -166,71 +175,57 @@ if True:
 
     st.markdown("<br><br>", unsafe_allow_html=True)
 
-if program_name is not None:
-    # Target processor selection
-    st.markdown("""
-    <div style="background-color:#f5f5f5;padding:10px;border-radius:6px;margin-bottom:10px;">
-    <p style="font-size:16px;">
-        <strong>Step 2: </strong>Select the <strong>processor type</strong> for your device. The agent will generate <strong>assembly code</strong> tailored to your selected architecture.
-        You will receive the final <code>.s</code> (assembly) file, which you can compile into an executable for your specific hardware.
-    </p>
-    </div>
-    """, unsafe_allow_html=True)
-  
-    st.write(st.session_state["processor"])
-    if st.session_state["processor"] in ["RiscV", "ARM"]:
-        # st.session_state["processor"] = st.selectbox(
-        #     "Processor Type of Your IoT Device or Target Machine",
-        #     ["RiscV", "ARM"])
-        st.write("We are in if")
-        st.write(st.session_state["processor"])
-    else:
-        st.session_state["processor"] = st.selectbox(
-            "Processor Type of Your IoT Device or Target Machine",
-            ["","RiscV", "ARM"],
-            index=0)
-        st.write("We are in ELSE")
-        st.write(st.session_state["step"])
+
+# Target processor selection
+st.markdown("""
+<div style="background-color:#f5f5f5;padding:10px;border-radius:6px;margin-bottom:10px;">
+<p style="font-size:16px;">
+    <strong>Step 2: </strong>Select the <strong>processor type</strong> for your device. The agent will generate <strong>assembly code</strong> tailored to your selected architecture.
+    You will receive the final <code>.s</code> (assembly) file, which you can compile into an executable for your specific hardware.
+</p>
+</div>
+""", unsafe_allow_html=True)
+
+st.session_state["processor"] = st.selectbox(
+    "Processor Type of Your IoT Device or Target Machine",
+    ["","RiscV", "ARM"],
+    index=0)
     
 st.markdown("<br><br>", unsafe_allow_html=True)
+# We have two methods to execute your code on a device. Embedded-ZKP mode and Assisted-Trigger mode. In Embedded ZKP mode, your final executable code will generate ZKP. In this method, our agent will our ZKP generation library to your code and 
+# it increase the size of your program. In Assisted Trigger mode, we will not add our ZKp SDK to your code and only will add some tages to your code to let a dubger knows when you want to start ZKP generation process. This method
+# will add a minimum number of opcodes to your program and your program size will not increase. however, the execution of yur program on your device will be paused for a short period (a few nano sec) to read the processor register values.
+st.markdown("""
+<div style="background-color:#f4f4f4;padding:15px;border-radius:8px;">
+<p style="font-size:16px;"><strong>Step 3: Execution Mode to Generate ZKP:</strong> We offer two modes for executing your program on a device: <strong>Embedded-ZKP</strong> and <strong>Assisted-Trigger</strong>.</p>
+<ul style="font-size:15px;">
+    <li><strong>Embedded-ZKP:</strong> The agent injects the full ZKP generation library into your code. Your final executable can independently generate ZKPs, but this increases the program size.</li>
+    <li><strong>Assisted-Trigger:</strong> The agent adds lightweight markers to your code to signal when ZKP generation should begin. This approach keeps your program size minimal but briefly pauses execution (a few nanoseconds) to capture processor register values.</li>
+</ul>
+</div>
+""", unsafe_allow_html=True)
 
-if st.session_state["processor"]:
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    # We have two methods to execute your code on a device. Embedded-ZKP mode and Assisted-Trigger mode. In Embedded ZKP mode, your final executable code will generate ZKP. In this method, our agent will our ZKP generation library to your code and 
-    # it increase the size of your program. In Assisted Trigger mode, we will not add our ZKp SDK to your code and only will add some tages to your code to let a dubger knows when you want to start ZKP generation process. This method
-    # will add a minimum number of opcodes to your program and your program size will not increase. however, the execution of yur program on your device will be paused for a short period (a few nano sec) to read the processor register values.
-    st.markdown("""
-    <div style="background-color:#f4f4f4;padding:15px;border-radius:8px;">
-    <p style="font-size:16px;"><strong>Step 3: Execution Mode to Generate ZKP:</strong> We offer two modes for executing your program on a device: <strong>Embedded-ZKP</strong> and <strong>Assisted-Trigger</strong>.</p>
-    <ul style="font-size:15px;">
-        <li><strong>Embedded-ZKP:</strong> The agent injects the full ZKP generation library into your code. Your final executable can independently generate ZKPs, but this increases the program size.</li>
-        <li><strong>Assisted-Trigger:</strong> The agent adds lightweight markers to your code to signal when ZKP generation should begin. This approach keeps your program size minimal but briefly pauses execution (a few nanoseconds) to capture processor register values.</li>
-    </ul>
-    </div>
-    """, unsafe_allow_html=True)
+if st.session_state["generation_method"] in ["Embedded-ZKP", "Assisted-Trigger"]:
+    st.session_state["generation_method"] = st.selectbox(
+                "Execution Mode to Generate ZKP",
+                ["Embedded-ZKP", "Assisted-Trigger"])
+else:
+    st.session_state["generation_method"] = st.selectbox(
+        "Execution Mode to Generate ZKP",
+        ["", "Embedded-ZKP", "Assisted-Trigger"],
+        index=0)
 
-    if st.session_state["generation_method"] in ["Embedded-ZKP", "Assisted-Trigger"]:
-        st.session_state["generation_method"] = st.selectbox(
-                    "Execution Mode to Generate ZKP",
-                    ["Embedded-ZKP", "Assisted-Trigger"])
-    else:
-        st.session_state["generation_method"] = st.selectbox(
-            "Execution Mode to Generate ZKP",
-            ["", "Embedded-ZKP", "Assisted-Trigger"],
-            index=0)
+# set commitmentGenerator execution file in session
+st.session_state['commitmentGeneratorExecutorName'] = f"commitmentGenerator-{st.session_state['generation_method']}-{st.session_state['processor']}"
 
-if st.session_state["generation_method"]:
-    # set commitmentGenerator execution file in session
-    st.session_state['commitmentGeneratorExecutorName'] = f"commitmentGenerator-{st.session_state['generation_method']}-{st.session_state['processor']}"
-    
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    # Class input as a slider between 1 and 16
-    st.markdown("""
-    <div style="background-color:#f4f4f4;padding:15px;border-radius:8px;">
-    <p style="font-size:16px;"><strong>Step 4: ZKP Class:</strong> We offer 16 ZKP classes. To learn about these classes, please refer to our Wiki page.</p>
-    </div>
-    """, unsafe_allow_html=True)
-    program_class = st.slider("ZKP class", min_value=1, max_value=16, value=1)
+st.markdown("<br><br>", unsafe_allow_html=True)
+# Class input as a slider between 1 and 16
+st.markdown("""
+<div style="background-color:#f4f4f4;padding:15px;border-radius:8px;">
+<p style="font-size:16px;"><strong>Step 4: ZKP Class:</strong> We offer 16 ZKP classes. To learn about these classes, please refer to our Wiki page.</p>
+</div>
+""", unsafe_allow_html=True)
+program_class = st.slider("ZKP class", min_value=1, max_value=16, value=1)
 
 if st.session_state['commitmentGeneratorExecutorName']:
     st.markdown("<br><br>", unsafe_allow_html=True) 
@@ -289,7 +284,6 @@ if st.session_state["device_config_data_set"]:
 # pip install langfuse
 # pip install mlflow
 
-import os
 import base64
 from dotenv import load_dotenv
 
@@ -304,7 +298,6 @@ import subprocess
 from crewai import Agent, Task, Crew
 from crewai.tools import tool
 from langchain_openai import ChatOpenAI
-
 
 # Initialize the OpenAI model
 llm_model = ChatOpenAI(
@@ -330,6 +323,8 @@ os.environ["OTEL_EXPORTER_OTLP_TRACES_HEADERS"] = f"Authorization=Basic {LANGFUS
 os.environ['OTEL_EXPORTER_OTLP_TRACES_PROTOCOL']= "http/protobuf"
 
 import mlflow
+from mlflow.tracking import MlflowClient
+
 mlflow.crewai.autolog()
 
 ################################################################
