@@ -4,10 +4,10 @@ This repository hosts two autonomous AI agent crews built using [CrewAI](https:/
 
 ## 🔧 Agent Crews
 
-### 1. Computation Commitment Management
+### 1. ZKP Integration Crew
 This crew manages the creation, registration, and tracking of cryptographic commitments to computational tasks. It ensures that computation requests are recorded in a tamper-proof and verifiable manner using techniques like hash-based commitments and on-chain logs.
 
-### 2. Zero-Knowledge Proof (ZKP) Verifier
+### 2. Zero-Knowledge Proof (ZKP) Verifier Crew
 This crew is responsible for automatically verifying the validity of zero-knowledge proofs submitted by decentralized agents, IoT devices, or smart contracts. It supports modular integration with zk-SNARKs, zk-STARKs, and custom ZK circuits.
 
 ## 🌐 Use Cases
