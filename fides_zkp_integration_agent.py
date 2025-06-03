@@ -70,12 +70,12 @@ with st.sidebar:
 
 
 ########### Starting the main page ########################
-#st.title("ZKP Commitment Generator Agent")
+#st.title("ZKP Integration Agent")
 st.markdown(
     """
     <div style="display: flex; align-items: center;">
         <img src="https://fidesinnova.io/Fides-Innova-Agent-2.png" width="100" style="margin-right: 15px;" />
-        <h2 style="margin: 0;">ZKP Commitment Generator Agent</h2>
+        <h2 style="margin: 0;">ZKP Integration Agent</h2>
     </div>
     """,
     unsafe_allow_html=True
@@ -215,7 +215,7 @@ else:
     st.session_state["generation_method"] = st.selectbox(
         "Execution Mode to Generate ZKP",
         ["Embedded-ZKP", "Assisted-Trigger"],
-        index=0)
+        index=1)
 
 # set commitmentGenerator execution file in session
 st.session_state['commitmentGeneratorExecutorName'] = f"commitmentGenerator-{st.session_state['generation_method']}-{st.session_state['processor']}"
@@ -461,6 +461,8 @@ def compilerTool(program: str) -> str:
 
     filename = os.path.basename(program)
     base_name, ext = os.path.splitext(filename)
+    st.session_state["base_name"] = base_name
+    st.session_state["ext"] = ext
     ext = ext.lower()
     filename = base_name + ext
 
@@ -484,10 +486,15 @@ def compilerTool(program: str) -> str:
 
     if language == "C++":
         new_line = '#include "lib/fidesinnova.h"\n'
-        if new_line not in program_code:
-            modified_code = new_line + program_code
+        if st.session_state["generation_method"] == "Embedded-ZKP":
+            if new_line not in program_code:
+                modified_code = new_line + program_code
+            else:
+                modified_code = program_code
+        elif st.session_state["generation_method"] == "Assisted-Trigger":
+            modified_code = program_code    
         else:
-            modified_code = program_code
+            st.error("Unknown ZKP generation_method.")
 
         new_filename = f"{base_name}_FidesZKPLib.cpp"
         with open(f"{session_id}/{new_filename}", "w") as f2:
@@ -589,17 +596,45 @@ def commitmentGeneratorTool(program: str) -> str:
     command_to_execute = f"../{st.session_state['commitmentGeneratorExecutorName']} {program}"
     st.write(f"🛠️ Executing: `{command_to_execute[3:]}`")
 
-    result = subprocess.run(command_to_execute.split(), capture_output=True, text=True, cwd=session_id, timeout=30)
-
-    if result.returncode != 0:
-        st.error("❌ Commitment generation failed:")
-        # st.code(result.stderr, language="bash")
-        raise RuntimeError(
-            f"Commitment Generation failed!\nError Output:\n{result.stderr}"
+    try:
+        result = subprocess.run(
+            command_to_execute.split(),
+            capture_output=True,
+            text=True,
+            cwd=session_id,
+            timeout=30
         )
 
-    st.success("✅ Commitment generation completed.")
-    # st.code(result.stdout)
+        if result.stdout:
+            st.info("ℹ️ Output:")
+            st.code(result.stdout, language="bash")
+
+        if result.stderr:
+            st.warning("⚠️ Warnings or logs:")
+            st.code(result.stderr, language="bash")
+
+        if result.returncode != 0:
+            st.error("❌ Commitment generation failed.")
+            raise RuntimeError(f"Commitment Generation failed!\nError Output:\n{result.stderr}")
+
+        # Build the full file paths
+        base_path = os.path.join(os.getcwd(), st.session_state["session_id"])
+        base_name = st.session_state["base_name"]
+
+        param_file = os.path.join(base_path, f"{base_name}_FidesZKPLib_param.json")
+        commitment_file = os.path.join(base_path, f"{base_name}_FidesZKPLib_commitment.json")
+        finalasm_file = os.path.join(base_path, f"{base_name}_FidesZKPLib_AddedFidesProofGen.s")
+
+        if all(os.path.exists(f) for f in [param_file, commitment_file, finalasm_file]):
+            st.success("✅ Commitment generation completed successfully, and necessary files were created.")
+        else:
+            st.code(result.stdout, language="bash")
+            st.error("❌ Commitment generation did not produce all the required files. Your code block numbers may be incorrect. Please fix them and try again. If you’re confident the code block numbers are correct, contact info@fidesinnova.io for assistance.")
+
+    except Exception as e:
+        st.error(f"An error occurred while executing the command:\n{e}")
+        
+        # st.code(result.stdout)
     return result.stdout
 
 commitmentGeneratorAgent = Agent(role="commitmentGenerator",
@@ -660,7 +695,17 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
     st.write("🔄 Reading output from Commitment Generator Agent...")
     # st.info("generatorAgentOutput: "+ str(generatorAgentOutput))
     # load the generatorAgentOutput
-    generatorAgentOutput = json.loads(generatorAgentOutput)
+    # st.write(f"RRRR111 generatorAgentOutput: {generatorAgentOutput}")
+    # generatorAgentOutput = json.loads(generatorAgentOutput)
+    
+    try:
+        generatorAgentOutput = json.loads(generatorAgentOutput)
+    except json.JSONDecodeError as e:
+        st.write("JSON decode error:", e)
+        st.write("Raw input was:", generatorAgentOutput)
+    except Exception as e:
+        st.write("Unexpected error:", e)
+
     # get the commitment file name
     commitmentFile = generatorAgentOutput["commitmentFile"]
     # get the param file name
