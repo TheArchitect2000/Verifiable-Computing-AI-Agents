@@ -188,8 +188,8 @@ st.markdown("""
 
 st.session_state["processor"] = st.selectbox(
     "Processor Type of Your IoT Device or Target Machine",
-    ["","RiscV", "ARM"],
-    index=0)
+    ["RiscV", "ARM"],
+    index=1)
     
 st.markdown("<br><br>", unsafe_allow_html=True)
 # We have two methods to execute your code on a device. Embedded-ZKP mode and Assisted-Trigger mode. In Embedded ZKP mode, your final executable code will generate ZKP. In this method, our agent will our ZKP generation library to your code and 
@@ -205,6 +205,8 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# if it's the Embedded-ZKP, the lib/fidesinnova.h should be added to the user program.
+# if it's the Assisted-Trigger, the lib/fidesinnova.h should not be added to the user program.
 if st.session_state["generation_method"] in ["Embedded-ZKP", "Assisted-Trigger"]:
     st.session_state["generation_method"] = st.selectbox(
                 "Execution Mode to Generate ZKP",
@@ -212,7 +214,7 @@ if st.session_state["generation_method"] in ["Embedded-ZKP", "Assisted-Trigger"]
 else:
     st.session_state["generation_method"] = st.selectbox(
         "Execution Mode to Generate ZKP",
-        ["", "Embedded-ZKP", "Assisted-Trigger"],
+        ["Embedded-ZKP", "Assisted-Trigger"],
         index=0)
 
 # set commitmentGenerator execution file in session
