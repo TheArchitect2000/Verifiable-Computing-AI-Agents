@@ -592,6 +592,13 @@ def commitmentGeneratorTool(program: str) -> str:
         st.stop()  # Stop the Streamlit app execution
         sys.exit()  # Exit the Python script
 
+    # Check if the commitmentGenerator executor file name has RiscV in its name, then ask the user to contact info@fidesinnova.io to open access to the Fides GitHub repository for RiscV
+    if "RiscV" in st.session_state['commitmentGeneratorExecutorName']:
+        st.error("❌ Please contact info@fidesinnova.io to request access to the Fides GitHub repository for RiscV support. The current commitmentGenerator executor does not support RiscV.")
+        st.stop()  
+        # Stop the Streamlit app execution
+        sys.exit()  # Exit the Python script
+
     st.write(f"program: {program}")
     command_to_execute = f"../{st.session_state['commitmentGeneratorExecutorName']} {program}"
     st.write(f"🛠️ Executing: `{command_to_execute[3:]}`")
