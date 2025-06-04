@@ -363,7 +363,7 @@ def deviceConfigTool(myJson: str) -> str:
     st.success("✅ Device config file updated successfully.")
 
     st.session_state["config_path"] = config_path
-    return "✅ Device config file updated successfully."
+    return "config_path: " + config_path
 
 
 deviceConfigAgent = Agent(
@@ -390,7 +390,7 @@ deviceConfigTask = Task(
     agent=deviceConfigAgent,
     description= """
                 Generate a JSON object called myJson with the specified keys and values. 
-                Then invoke only once deviceConfigTool(myJson) to save it to device_config.json.
+                Then invoke deviceConfigTool(myJson) only one time to save it to device_config.json.
                 """,
     expected_output = "Print a message whether the device config file is updated or not.",
     tools=[deviceConfigTool]
@@ -416,16 +416,20 @@ def operatingSystemTool() -> str:
                     os_type = "ubuntu"
                 else:
                     os_type = "Linux(Other)"
-                    raise ValueError(f"The recognized operating system is {os_type}. This agent does not have any commitment generator for this os. Please contact info@fidesinnova.io for further instruction.")
+                    return f"The recognized operating system is {os_type}. This agent does not have any commitment generator for this os. Please contact info@fidesinnova.io for further instruction."
+#                     raise ValueError(f"The recognized operating system is {os_type}. This agent does not have any commitment generator for this os. Please contact info@fidesinnova.io for further instruction.")
+
         else:
             os_type = "Linux(Likely)"
-            raise ValueError(f"The recognized operating system is {os_type}. This agent does not have any commitment generator for this os. Please contact info@fidesinnova.io for further instruction.")
+            return f"The recognized operating system is {os_type}. This agent does not have any commitment generator for this os. Please contact info@fidesinnova.io for further instruction."
+#             raise ValueError(f"The recognized operating system is {os_type}. This agent does not have any commitment generator for this os. Please contact info@fidesinnova.io for further instruction.")
 
     elif sys.platform == 'darwin':
         os_type = "mac"
     else:
         os_type = "Other OS"
-        raise ValueError(f"The recognized operating system is {os_type}. This agent does not have any commitment generator for this os. Please contact info@fidesinnova.io for further instruction.")
+        return f"The recognized operating system is {os_type}. This agent does not have any commitment generator for this os. Please contact info@fidesinnova.io for further instruction."
+#         raise ValueError(f"The recognized operating system is {os_type}. This agent does not have any commitment generator for this os. Please contact info@fidesinnova.io for further instruction.")
 
     st.info(f"🖥️ Detected Operating System: `{os_type}`")
 
@@ -440,11 +444,12 @@ def operatingSystemTool() -> str:
         processor_type = "arm"
     else:
         processor_type = processor_arch
-        raise ValueError(f"The recognized processor type is {processor_type}, which is currently unsupported. Please contact info@fidesinnova.io for further instructions.")
+        return f"The recognized processor type is {processor_type}, which is currently unsupported. Please contact info@fidesinnova.io for further instructions."
+#        raise ValueError(f"The recognized processor type is {processor_type}, which is currently unsupported. Please contact info@fidesinnova.io for further instructions.")
 
     st.session_state['commitmentGeneratorExecutorName'] += f"-{processor_type}"
 
-    st.info(f"I've chosen this commitmentGenerator based on your operating system and CPU architecture: {st.session_state['commitmentGeneratorExecutorName']}")
+    st.info(f"I've chosen the following commitment generator based on your operating system and CPU architecture: {st.session_state['commitmentGeneratorExecutorName']}")
     os.environ["os_type"] = os_type
     os.environ["processor_type"] = processor_type
 
@@ -475,8 +480,8 @@ def compilerTool(program: str) -> str:
         language = "C++"
     else:
         st.error(f"❌ Unsupported file extension: {ext}")
-        raise ValueError("Unsupported file extension")
-    #    return "❌ Unsupported file extension"
+ #       raise ValueError("Unsupported file extension")
+        return "Error: Unsupported file extension"
     
 
     st.write(f"📄 Detected language: **{language}**")
@@ -510,34 +515,38 @@ def compilerTool(program: str) -> str:
                 # g++ is to be run on ARM and generate the assembly code for ARM prcoessors
                 command_to_execute = f"g++ -std=c++17 -S {new_filename} -o {asm_filename}"
             else:
-                raise ValueError("Unsupported processor type.")
+                return "Error: Unsupported processor type."
+#                 raise ValueError("Unsupported processor type.")
+
 
             st.write(f"🛠️ Executing: `{command_to_execute}`")
             result = subprocess.run(command_to_execute.split(), capture_output=True, text=True, cwd=session_id, timeout=30)
         except:
-            raise RuntimeError("Execution Error.")
+            return "Error: Execution Error."
+#            raise RuntimeError("Execution Error.")
+
 
         if result.returncode != 0:
             st.error("❌ Compilation failed:")
             # st.code(result.stderr, language="bash")
-    #        return "❌ Compilation failed:"
-            raise RuntimeError(
-                f"Compilation failed!\nError Output:\n{result.stderr}"
-            )
+            return "Error: Compilation failed."
+            # raise RuntimeError(
+            #     f"Compilation failed!\nError Output:\n{result.stderr}"
+            # )
 
         st.success(f"✅ Compilation succeeded. Assembly file: {asm_filename}")
 
         return asm_filename
 
     else:
-        st.error("Only C++ is supported for now")
- #       return "❌ Unsupported file extension"
-        raise NotImplementedError("Only C++ is supported for now")
+        st.error("The agent does not have any instruction to handle this file type for now. Please use a C++ file, or email info@fidesinnova.io to further discuss your needs.")
+        return "Error: Unsupported file extension."
+        #raise NotImplementedError("Only C++ is supported for now")
 
 #######################################
 CompilerAgent = Agent(
     role="Compiler",
-    goal="Execute the compilerTool tool only once. If there is any error, print the error for the user and provide some suggestions to fix it. Then, do not proceed with any other agent and stop the crew.",
+    goal="Execute the compilerTool tool only one time. If there is any error, print the error for the user and provide some suggestions to fix it. Then, do not proceed with any other agent and stop the crew.",
     backstory="",
     tools=[operatingSystemTool, compilerTool],
     allow_delegation=True,
@@ -555,7 +564,7 @@ operatingSystemTask = Task(
 
 CompilerTask = Task(
     agent=CompilerAgent,
-    description="Process the user's program file {program} with compilerTool only once.",
+    description="Call compilerTool only one time to process the user's program file {program}. If there is error from the compilerTool, stop the agent and the crew. Otherwise, return the assembly output filename resulting from execution of the g++ compiler.",
     expected_output=(
         "If there is no error from the g++ compilation command, then return only the assembly output filename resulting from execution of the g++ compiler. "
         "If there is any error, print the error for the user and provide some suggestions to fix it. Then, do not proceed with any other agent and stop the crew."
@@ -563,7 +572,7 @@ CompilerTask = Task(
     tools=[compilerTool]
 )
 
-3#####################################################
+#####################################################
 ########################################################
 ### Commitment Generator Agent
 #####################################################
@@ -614,15 +623,16 @@ def commitmentGeneratorTool(program: str) -> str:
 
         if result.stdout:
             st.info("ℹ️ Output:")
-            st.code(result.stdout, language="bash")
+            st.code(str(result.stdout)[:500], language="bash")
 
         if result.stderr:
             st.warning("⚠️ Warnings or logs:")
-            st.code(result.stderr, language="bash")
+            st.code(str(result.stderr)[:500], language="bash")
 
         if result.returncode != 0:
             st.error("❌ Commitment generation failed.")
-            raise RuntimeError(f"Commitment Generation failed!\nError Output:\n{result.stderr}")
+            return f"Error: Commitment Generation failed!\nError Output:\n{result.stderr}"
+#             raise RuntimeError(f"Commitment Generation failed!\nError Output:\n{result.stderr}")
 
         # Build the full file paths
         base_path = os.path.join(os.getcwd(), st.session_state["session_id"])
@@ -655,8 +665,8 @@ commitmentGeneratorAgent = Agent(role="commitmentGenerator",
 
 ExecutingCommitmentGeneratorTask = Task( 
                                 agent = commitmentGeneratorAgent,
-                                description = "Based on the output of the operatingSystemTool tool, run only once the commitmentGeneratorTool.",
-                                expected_output = "If the output of the tools is successful, return in a json format with keys 'commitmentFile' and 'paramFile' and 'finalAssemblyFile'. The values are the file name from the output of the tool. If there is an error, print the error for the user and provide some suggestions to fix it. Then, do not proceed with any other agent and stop the crew.",
+                                description = "Call commitmentGeneratorTool only one time based on the output of the operatingSystemTool tool. if there is an error from the commitmentGeneratorTool, stop the agent and the crew. Otherwise, return the output of the commitmentGeneratorTool.",
+                                expected_output = "If the output of the tools is successful, return in a json format without any extra text and with keys 'commitmentFile' and 'paramFile' and 'finalAssemblyFile'. The values are the file name from the output of the tool. If there is an error returned from the commitmentGeneratorTool, stop the agent and stop the crew.",
                                 tools=[commitmentGeneratorTool]
                                 )
 
@@ -707,25 +717,27 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
     
     try:
         generatorAgentOutput = json.loads(generatorAgentOutput)
+        # get the commitment file name
+        commitmentFile = generatorAgentOutput["commitmentFile"]
+        # get the param file name
+        paramFile = generatorAgentOutput["paramFile"]
+        # get the final assembly file name
+        finalAssemblyFile = generatorAgentOutput["finalAssemblyFile"]
+
+        session_id = st.session_state['session_id']
     except json.JSONDecodeError as e:
-        st.write("JSON decode error:", e)
-        st.write("Raw input was:", generatorAgentOutput)
+        # st.write("JSON decode error:", e)
+        # st.write("Raw input was:", generatorAgentOutput)
+        return "Error: Invalid JSON format in generatorAgentOutput. Please check the output from the Commitment Generator Agent."
     except Exception as e:
-        st.write("Unexpected error:", e)
-
-    # get the commitment file name
-    commitmentFile = generatorAgentOutput["commitmentFile"]
-    # get the param file name
-    paramFile = generatorAgentOutput["paramFile"]
-    # get the final assembly file name
-    finalAssemblyFile = generatorAgentOutput["finalAssemblyFile"]
-
-    session_id = st.session_state['session_id']
+        # st.write("Unexpected error:", e)
+        return f"Error: An unexpected error occurred while processing the generatorAgentOutput: {str(e)}"
 
     # check if the param file exists
     if not os.path.exists(f"{session_id}/{paramFile}"):
         st.error(f"❌ Required param file not found: {paramFile}")
-        raise RuntimeError(f"{paramFile} param file not found in the current directory.")
+        return f"Error: {paramFile} param file not found in the current directory."
+ #       raise RuntimeError(f"{paramFile} param file not found in the current directory.")
     else:
         st.success(f"✅ Required param file found: {paramFile}")
         st.session_state["paramFile"] = paramFile
@@ -734,13 +746,15 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
         # Check if the param data is valid
         if not isinstance(params, dict):
             st.error(f"❌ Invalid param file: {paramFile}. It should be a dictionary.")
-            raise ValueError("Invalid param file. It should be a dictionary.")
+            return "Error: Invalid param file. It should be a dictionary."
+ #           raise ValueError("Invalid param file. It should be a dictionary.")
         else:
             st.success(f"✅ {paramFile} file is valid.")
     # do the same checking for the final assembly file
     if not os.path.exists(f"{session_id}/{finalAssemblyFile}"):
         st.error(f"❌ Required final assembly file not found: {finalAssemblyFile}")
-        raise FileNotFoundError(f"{finalAssemblyFile} final assembly file not found in the current directory.")
+        return f"Error: {finalAssemblyFile} final assembly file not found in the current directory."
+#        raise FileNotFoundError(f"{finalAssemblyFile} final assembly file not found in the current directory.")
     else:
         st.session_state["finalAssemblyFile"] = finalAssemblyFile
         st.success(f"✅ Required final assembly file found: {finalAssemblyFile}")
@@ -752,7 +766,8 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
     # check if the commitment file exists
     if not os.path.exists(f"{session_id}/{commitmentFile}"):
         st.error(f"❌ Required commitment file not found: {commitmentFile}")
-        raise FileNotFoundError(f"{commitmentFile} file not found in the current directory.")
+        return f"Error: {commitmentFile} file not found in the current directory."
+#        raise FileNotFoundError(f"{commitmentFile} file not found in the current directory.")
     else:
         st.session_state["commitmentFile"] = commitmentFile
         st.success(f"✅ Required commitment file found: {commitmentFile}")
@@ -765,24 +780,28 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
         json.loads(commitmentData)
     except json.JSONDecodeError:
         st.error("❌ Invalid commitment file. It should be a valid json file.")
-        raise ValueError("Invalid commitment file. It should be a valid json file.")
+        return "Error: Invalid commitment file. It should be a valid json file."
+#        raise ValueError("Invalid commitment file. It should be a valid json file.")
     # Check if the commitment data is valid
     if not commitmentData:
         st.error("❌ Invalid commitment data. It should not be empty.")
-        raise ValueError("Invalid commitment data. It should not be empty.")
+        return "Error: Invalid commitment data. It should not be empty."
+ #       raise ValueError("Invalid commitment data. It should not be empty.")
     # Check if the commitment data is valid
     if len(commitmentData) > 1000000:
         st.error("❌ Invalid commitment data. It should not be larger than 1MB.")
-        raise ValueError("Invalid commitment data. It should not be larger than 1MB.")
+        return "Error: Invalid commitment data. It should not be larger than 1MB."
+# raise ValueError("Invalid commitment data. It should not be larger than 1MB.")
     # Check if the commitment data is valid
     if len(commitmentData) < 10:
         st.error("❌ Invalid commitment data. It should not be smaller than 10 bytes.")
-        raise ValueError("Invalid commitment data. It should not be smaller than 10 bytes.")
-
+        return "Error: Invalid commitment data. It should not be smaller than 10 bytes."
+#         raise ValueError("Invalid commitment data. It should not be smaller than 10 bytes.")
     # do the same checking for the device_config.json file
     if not os.path.exists(f"{session_id}/device_config.json"):
         st.error(f"❌ Required device_config.json file not found.")
-        raise FileNotFoundError(f"device_config.json file not found. Please make sure it is in the current directory.")
+        return "Error: device_config.json file not found. Please make sure it is in the current directory."
+#         raise FileNotFoundError(f"device_config.json file not found. Please make sure it is in the current directory.")
     else:
         st.success(f"✅ device_config.json file found.")
     # load the device_config.json file
@@ -792,11 +811,13 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
             device_config = json.load(f2)
     except json.JSONDecodeError:
         st.error("❌ Invalid device_config.json file. It should be a valid json file.")
-        raise ValueError("Invalid device_config.json file. It should be a valid json file.")
+        return "Error: Invalid device_config.json file. It should be a valid json file."
+#         raise ValueError("Invalid device_config.json file. It should be a valid json file.")
     # Check if the device config data is valid
     if not isinstance(device_config, dict):
         st.error("❌ Invalid device config data. It should be a dictionary.")
-        raise ValueError("Invalid device config data. It should be a dictionary.")
+        return "Error: Invalid device config data. It should be a dictionary."
+#        raise ValueError("Invalid device config data. It should be a dictionary.")
     # Check if the commitment data is valid
     required_keys = [
         "deviceType",
@@ -808,25 +829,31 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
     for key in required_keys:
         if key not in device_config:
             st.error(f"❌ Missing required key in device config data: {key}")
-            raise ValueError(f"Missing required key in device config data: {key}")
+            return f"Error: Missing required key in device config data: {key}"
+#             raise ValueError(f"Missing required key in device config data: {key}")
         if not isinstance(device_config[key], str):
             st.error(f"❌ Invalid value for key {key} in device config data. It should be a string.")
-            raise ValueError(f"Invalid value for key {key} in device config data. It should be a string.")
+            return f"Error: Invalid value for key {key} in device config data. It should be a string."
+#             raise ValueError(f"Invalid value for key {key} in device config data. It should be a string.")
     # Check if the device_config are valid
     if not device_config["class"]:
         st.error("❌ Invalid class. It should not be empty.")
-        raise ValueError("Invalid class. It should not be empty.")
+        return "Error: Invalid class. It should not be empty."
+#        raise ValueError("Invalid class. It should not be empty.")
     if not isinstance(device_config["class"], int):
         st.error("❌ Invalid class. It should be an integer.")
-        raise ValueError("Invalid class. It should be an integer.")
+        return "Error: Invalid class. It should be an integer."
+#         raise ValueError("Invalid class. It should be an integer.")
     # Check if the device_config are valid
     if device_config["class"] > 30:
         st.error("❌ Invalid class. It should not be larger than 30.")
-        raise ValueError("Invalid class. It should not be larger than 30.")
+        return "Error: Invalid class. It should not be larger than 30."
+#        raise ValueError("Invalid class. It should not be larger than 30.")
     # Check if the device_config are valid
     if device_config["class"] < 1:
         st.error("❌ Invalid class. It should not be smaller than 1.")
-        raise ValueError("Invalid class. It should not be smaller than 1.")
+        return "Error: Invalid class. It should not be smaller than 1."
+#         raise ValueError("Invalid class. It should not be smaller than 1.")
 
 
     # Call the polite agent to make sure all the used strings do not have an impolite or rude words and phrases. Also, the are not offensive As they are going to be registered on the blockchain forever.
@@ -855,12 +882,14 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
 
     except Exception as e:
         st.error(f"❌ Invalid Ethereum address format: {e}")
-        raise ValueError(f"❌ Invalid Ethereum address format: {e}")
+        return f"Error: Invalid Ethereum address format: {e}"
+#        raise ValueError(f"❌ Invalid Ethereum address format: {e}")
 
     # check if the CommitmentStorage.abi file exists
     if not os.path.exists("CommitmentStorage.abi"):
         st.error(f"❌ Required CommitmentStorage.abi file not found.")
-        raise FileNotFoundError("CommitmentStorage.abi file not found. Please make sure it is in the current directory.")
+        return "Error: CommitmentStorage.abi file not found. Please make sure it is in the current directory."
+ #         raise FileNotFoundError("CommitmentStorage.abi file not found. Please make sure it is in the current directory.")       
     else:
         st.success(f"✅ Required CommitmentStorage.abi file found.")
 
@@ -876,39 +905,49 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
         # Check if the submitter wallet address is valid(
         if Submitter_Wallet_Address and not isinstance(Submitter_Wallet_Address, str):
             st.error("Invalid submitter wallet address. It should be a string.")
-            raise ValueError("Invalid submitter wallet address. It should be a string.")
+            return "Error: Invalid submitter wallet address. It should be a string."
+#             raise ValueError("Invalid submitter wallet address. It should be a string.")
         # Check if the wallet address is valid
         if not w3.is_address(Submitter_Wallet_Address):
             st.error("Invalid wallet address.")
-            raise ValueError("Invalid wallet address.")
+            return "Error: Invalid wallet address."
+#             raise ValueError("Invalid wallet address.")
         # Check if the submitter wallet private key is valid
         if Submitter_Wallet_Private_Key and not isinstance(Submitter_Wallet_Private_Key, str):
             st.error("Invalid submitter wallet private key. It should be a string.")
-            raise ValueError("Invalid submitter wallet private key. It should be a string.")
+            return "Error: Invalid submitter wallet private key. It should be a string."
+#             raise ValueError("Invalid submitter wallet private key. It should be a string.")
         # Check if the smart contract address is valid
         if not w3.is_address(Blockchain_Commitment_Smart_Contract_Address):
             st.error("Invalid smart contract address.")
-            raise ValueError("Invalid smart contract address.")
+            return "Error: Invalid smart contract address."
+#             raise ValueError("Invalid smart contract address.")
         # Check if the blockchain ID is valid
         if Blockchain_ID and not isinstance(Blockchain_ID, int):
             st.error("Invalid blockchain ID. It should be an integer.")
-            raise ValueError("Invalid blockchain ID. It should be an integer.")
+            return "Error: Invalid blockchain ID. It should be an integer."
+#             raise ValueError("Invalid blockchain ID. It should be an integer.")
         # Check if the blockchain name is valid
         if Blockchain_Name and not isinstance(Blockchain_Name, str):
             st.error("Invalid blockchain name. It should be a string.")
-            raise ValueError("Invalid blockchain name. It should be a string.")
+            return "Error: Invalid blockchain name. It should be a string."
+#             raise ValueError("Invalid blockchain name. It should be a string.")
         # Check if the blockchain symbol is valid
         if Blockchain_Symbol and not isinstance(Blockchain_Symbol, str):
             st.error("Invalid blockchain symbol. It should be a string.")
-            raise ValueError("Invalid blockchain symbol. It should be a string.")
+            return "Error: Invalid blockchain symbol. It should be a string."
+#            raise ValueError("Invalid blockchain symbol. It should be a string.")
         # Check if the blockchain API provider is valid
         if Blockchain_API_Provider and not isinstance(Blockchain_API_Provider, str):
             st.error("Invalid blockchain API provider. It should be a string.")
-            raise ValueError("Invalid blockchain API provider. It should be a string.")
+            return "Error: Invalid blockchain API provider. It should be a string."
+#             raise ValueError("Invalid blockchain API provider. It should be a string.")
         # Check if the blockchain commitment smart contract address is valid
         if Blockchain_Commitment_Smart_Contract_Address and not isinstance(Blockchain_Commitment_Smart_Contract_Address, str):
             st.error("Invalid blockchain commitment smart contract address. It should be a string.")
-            raise ValueError("Invalid blockchain commitment smart contract address. It should be a string.")
+            return "Error: Invalid blockchain commitment smart contract address. It should be a string."
+#             raise ValueError("Invalid blockchain commitment smart contract address. It should be a string.")
+
 
         # print all the environment variables to let the user know that they are set
         st.markdown(f"""
@@ -931,20 +970,25 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
         # Check if connected to the blockchain
         if not w3.is_connected():
             st.error("Failed to connect to the Fides Innova blockchain.")
-            raise ConnectionError("Failed to connect to the Fides Innova blockchain.")
+            return "Error: Failed to connect to the Fides Innova blockchain."
+#            raise ConnectionError("Failed to connect to the Fides Innova blockchain.")
+
 
         # Check if the AgentAIMiniCode_FidesZKPLib_commitment.json file exists
 
         if not os.path.exists(f"{session_id}/{commitmentFile}"):
             st.error(f"❌ Required commitment file not found: {commitmentFile}")
-            raise FileNotFoundError(f"{commitmentFile} file not found. Please make sure it is in the current directory.")
+            return f"Error: {commitmentFile} file not found. Please make sure it is in the current directory."
+#           raise FileNotFoundError(f"{commitmentFile} file not found. Please make sure it is in the current directory.")
+
         # read the commitment_id from the commitmentId in the AgentAIMiniCode_FidesZKPLib_commitment.json file
         with open(f"{session_id}/{commitmentFile}", "r") as f1:
             commitmentData = json.load(f1)
         commitment_id = commitmentData.get("commitmentId")
         if not commitment_id:
             st.error("Invalid commitment file. It should contain a commitmentId field.")
-            raise ValueError("Invalid commitment file. It should contain a commitmentId field.")
+            return "Error: Invalid commitment file. It should contain a commitmentId field."
+#             raise ValueError("Invalid commitment file. It should contain a commitmentId field.")
 
         # commitment_id = str(uuid.uuid4())
 
@@ -1057,13 +1101,15 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
                     if hasattr(e, 'args') and len(e.args) > 0 and "revert" in e.args[0]:
                         reason = e.args[0].split("revert")[-1].strip()
                         st.error(f"❌ Transaction failed. Reason: {reason}\nExplorer: https://explorer.fidesinnova.io/{tx_hash.hex()}")
-                        raise RuntimeError(f"❌ Transaction failed. Reason: {reason}\nExplorer: https://explorer.fidesinnova.io/{tx_hash.hex()}")
+                        return f"Error: Transaction failed. Reason: {reason}\nExplorer: https://explorer.fidesinnova.io/{tx_hash.hex()}"
                     else:
                         st.error(f"❌ Transaction failed without explicit revert reason.\nExplorer: https://explorer.fidesinnova.io/{tx_hash.hex()}")
-                        raise RuntimeError(f"❌ Transaction failed without explicit revert reason.\nExplorer: https://explorer.fidesinnova.io/{tx_hash.hex()}")
+                        return f"Error: Transaction failed without explicit revert reason.\nExplorer: https://explorer.fidesinnova.io/{tx_hash.hex()}"
+#                         raise RuntimeError(f"❌ Transaction failed without explicit revert reason.\nExplorer: https://explorer.fidesinnova.io/{tx_hash.hex()}")
                 except Exception:
                     st.error(f"❌ Transaction failed, and revert reason could not be parsed.\nExplorer: https://explorer.fidesinnova.io/{tx_hash.hex()}")
-                    raise RuntimeError(f"❌ Transaction failed, and revert reason could not be parsed.\nExplorer: https://explorer.fidesinnova.io/{tx_hash.hex()}")
+                    return f"Error: Transaction failed, and revert reason could not be parsed.\nExplorer: https://explorer.fidesinnova.io/{tx_hash.hex()}"
+#                    raise RuntimeError(f"❌ Transaction failed, and revert reason could not be parsed.\nExplorer: https://explorer.fidesinnova.io/{tx_hash.hex()}")
 
         # Transaction succeeded
         explorer_link = f"https://explorer.fidesinnova.io/tx/0x{tx_hash.hex()}"
@@ -1074,7 +1120,7 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
 
 
 commitmentSubmitterAgent = Agent(role="commitmentSubmitter",
-                                 goal="Read the commitment file from the commitmentGenerator agent, and also, read the device_config.json, then call the commitmentSubmitter tool to upload the commitment json file on the Fides Innova blockchain network.",
+                                 goal="Read the commitment file from the commitmentGenerator agent, and also, read the device_config.json, then call the commitmentSubmitter tool only one time to upload the commitment json file on the Fides Innova blockchain network.",
                                  backstory="",
                                  tools=[commitmentSubmitterTool],
                                  llm=llm_model,
@@ -1084,7 +1130,7 @@ commitmentSubmitterAgent = Agent(role="commitmentSubmitter",
 
 commitmentSubmitterTask = Task(
                                 agent=commitmentSubmitterAgent,
-                                description="Read the commitment file from the commitmentGenerator agent, and also, read the device_config.json, then call only once the commitmentSubmitter tool to upload the commitment json file on the Fides Innova blockchain network.",
+                                description="Read the commitment file from the commitmentGenerator agent, and also, read the device_config.json, then call the commitmentSubmitter tool only one time to upload the commitment json file on the Fides Innova blockchain network. if there is an error returned from the commitmentSubmitterTool tool, stop the agent and the crew.",
                                 expected_output="A success message indicating the commitment file has been uploaded as well as a link to the transaction on the blockchain explorer.",
                                 tools=[commitmentSubmitterTool]                     
                                 )
@@ -1191,4 +1237,6 @@ if st.button("Submit to ZKP Agent"):
 
 
         except Exception as e:
-            st.error(f"❌ An error occurred: {e}")
+#            st.error(f"❌ An error occurred: {e}")
+            st.error("❌ Please check the above messages for more details.")
+
