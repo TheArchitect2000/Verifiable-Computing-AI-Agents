@@ -1,5 +1,9 @@
-import streamlit as st
+# pip install crewai
+# pip install langfuse
+# pip install mlflow
 
+import streamlit as st
+st.set_page_config(page_title="Fides ZKP Agent", layout="wide")
 #from commitment_management_crew import crew1
 import os
 from pathlib import Path
@@ -8,6 +12,58 @@ import random
 import hashlib
 import shutil
 import platform
+import base64
+from dotenv import load_dotenv
+
+load_dotenv()
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+os.environ["LANGCHAIN_API_KEY"]=os.getenv("LANGCHAIN_API_KEY")
+os.environ["LANGCHAIN_PROJECT"]=os.getenv("LANGCHAIN_PROJECT")
+os.environ["LANGCHAIN_TRACING_V2"]="true"
+
+import sys
+import subprocess
+from crewai import Agent, Task, Crew
+from crewai.tools import tool
+from langchain_openai import ChatOpenAI
+
+# Initialize the OpenAI model
+llm_model = ChatOpenAI(
+    model="gpt-4o-mini",
+    temperature=0.1,
+    max_tokens=4096,
+    streaming=True,
+)
+
+import logging
+logging.basicConfig(level=logging.INFO)
+
+from langfuse import Langfuse
+
+# host=os.getenv("LANGFUSE_API_URL")
+LANGFUSE_PUBLIC_KEY = os.getenv("LANGFUSE_PUBLIC_KEY")
+LANGFUSE_SECRET_KEY = os.getenv("LANGFUSE_SECRET_KEY")
+LANGFUSE_AUTH=base64.b64encode(f"{LANGFUSE_PUBLIC_KEY}:{LANGFUSE_SECRET_KEY}".encode()).decode()
+
+# os.environ["OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"] = "https://cloud.langfuse.com/api/public/otel/v1/traces"  # 🇪🇺 EU data region
+os.environ["OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"] = "https://us.cloud.langfuse.com/api/public/otel/v1/traces"  # 🇺🇸 US data region
+os.environ["OTEL_EXPORTER_OTLP_TRACES_HEADERS"] = f"Authorization=Basic {LANGFUSE_AUTH}"
+os.environ['OTEL_EXPORTER_OTLP_TRACES_PROTOCOL']= "http/protobuf"
+
+import mlflow
+from mlflow.tracking import MlflowClient
+
+mlflow.crewai.autolog()
+
+import datetime
+from pathlib import Path
+from web3 import Web3
+import datetime
+import uuid
+import hashlib
+import random
+import shutil
+
 
 # set_page_config must be the first Streamlit command
 st.set_page_config(page_title="ZKP Program Metadata Form", layout="centered")
@@ -49,7 +105,8 @@ with st.sidebar:
         unsafe_allow_html=True
     )
 
-    st.markdown("---", unsafe_allow_html=True)
+    progress_bar = st.progress(0)
+ #   st.markdown("---", unsafe_allow_html=True)
 
     # st.markdown("### 🔗 Links", unsafe_allow_html=True)
     st.markdown("""
@@ -80,6 +137,8 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
+st.session_state["session_id"] = None
 
 if "processor" not in st.session_state:
     st.session_state["processor"] = "" 
@@ -119,62 +178,16 @@ if True:
     </p>
     </div>
     """, unsafe_allow_html=True)
+
     # File uploader for program file
     program = st.file_uploader("Upload your program file (.cpp or .py)", type=["cpp", "py"])
-    if program is not None:
+    if (program is not None) and (st.session_state.get("session_id") is None):
         st.session_state["program_name"] = program.name
         st.session_state["program"] = program
         st.session_state["processor"] = ""
         st.session_state["generation_method"] = ""
 
-    # Initialize session state if not exists
-    if 'session_id' not in st.session_state:
-        # Generate random number and create hash
-        random_num = random.getrandbits(128)
-        hash_object = hashlib.sha256(str(random_num).encode())
-        hash_hex = hash_object.hexdigest()
-        
-        # Folder-session name
-        import datetime
-        # create a timestamp to attach to session_id
-        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M")
-        # Shorten hash to 16 characters
-        shrt_hash = hash_hex[:4]
-        # create a timestamp to attach to session_id
-        session_id = f"sessions/s-{timestamp}-{shrt_hash}"
-        st.session_state['session_id'] = session_id
-        
-        # Create directory with session ID
-        session_id = Path(session_id)
-        session_id.mkdir(exist_ok=True)
-        st.session_state['session_id'] = session_id
-
-        # Get current session directory
-        session_id = st.session_state['session_id']
-    else:
-        session_id = st.session_state['session_id']
-
-    # Store uploaded file in the current directory
-    program_name = st.session_state.get("program_name", None)
-    # st.write(f"program_name: {program_name}")
-    # st.write(f"session_id: {session_id}")
-
-    if program_name is not None:
-        full_path=f"{session_id}/{program_name}"
-        with open(full_path, "wb") as f:
-            f.write(st.session_state["program"].read())
-        st.success(f"Uploaded and saved as {program_name}")
-
-    # if the program_name file exists in the session directory, copy it to the session directory
-    # copy all files from /lib to the session directory
-    shutil.copytree("lib", session_id / "lib", dirs_exist_ok=True)
-    shutil.copytree("data", session_id / "data", dirs_exist_ok=True)
-    # copy file class.json to the session directory
-    shutil.copy2("class.json", session_id / "class.json")
-    #st.success("Necessary files copied to the session directory.")
-
     st.markdown("<br><br>", unsafe_allow_html=True)
-
 
 # Target processor selection
 st.markdown("""
@@ -259,7 +272,8 @@ if st.session_state["device_config_data_set"]:
     code_block = st.text_input("Code block", value="[33, 34]")
 
     st.markdown("<br><br>", unsafe_allow_html=True)
-    st.info(f"System message: Session initialized with ID {st.session_state['session_id']}.")
+
+#    st.info(f"System message: Session initialized with ID {st.session_state['session_id']}.")
 
 #################################################
 #################################################
@@ -280,54 +294,6 @@ if st.session_state["device_config_data_set"]:
 # The agent return a link to the explorer to show the submitted commitment file, https://explorer.fidesinnova.io/xxxxxxxxxx
 # The Fides Innova explorer shows the "CommitmentManagerAIAgent" name as the transaction submitter on the blockchain.
 
-# --- Step 2: Load environment variables from .env file
-
-# pip install crewai
-# pip install langfuse
-# pip install mlflow
-
-import base64
-from dotenv import load_dotenv
-
-load_dotenv()
-os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
-os.environ["LANGCHAIN_API_KEY"]=os.getenv("LANGCHAIN_API_KEY")
-os.environ["LANGCHAIN_PROJECT"]=os.getenv("LANGCHAIN_PROJECT")
-os.environ["LANGCHAIN_TRACING_V2"]="true"
-
-import sys
-import subprocess
-from crewai import Agent, Task, Crew
-from crewai.tools import tool
-from langchain_openai import ChatOpenAI
-
-# Initialize the OpenAI model
-llm_model = ChatOpenAI(
-    model="gpt-4o-mini",
-    temperature=0.1,
-    max_tokens=4096,
-    streaming=True,
-)
-
-import logging
-logging.basicConfig(level=logging.INFO)
-
-from langfuse import Langfuse
-
-# host=os.getenv("LANGFUSE_API_URL")
-LANGFUSE_PUBLIC_KEY = os.getenv("LANGFUSE_PUBLIC_KEY")
-LANGFUSE_SECRET_KEY = os.getenv("LANGFUSE_SECRET_KEY")
-LANGFUSE_AUTH=base64.b64encode(f"{LANGFUSE_PUBLIC_KEY}:{LANGFUSE_SECRET_KEY}".encode()).decode()
-
-# os.environ["OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"] = "https://cloud.langfuse.com/api/public/otel/v1/traces"  # 🇪🇺 EU data region
-os.environ["OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"] = "https://us.cloud.langfuse.com/api/public/otel/v1/traces"  # 🇺🇸 US data region
-os.environ["OTEL_EXPORTER_OTLP_TRACES_HEADERS"] = f"Authorization=Basic {LANGFUSE_AUTH}"
-os.environ['OTEL_EXPORTER_OTLP_TRACES_PROTOCOL']= "http/protobuf"
-
-import mlflow
-from mlflow.tracking import MlflowClient
-
-mlflow.crewai.autolog()
 
 ################################################################
 ################################################################
@@ -345,7 +311,7 @@ def deviceConfigTool(myJson: str) -> str:
     Save the input myJson (stringified JSON) into device_config.json.
     """
 
-    import json
+    progress_bar.progress(10)
 
     try:
         parsed = json.loads(myJson)
@@ -407,6 +373,8 @@ def operatingSystemTool() -> str:
     Detect the processor type and operating system. Set the environment. Then, show result using Streamlit.
     """
 
+    progress_bar.progress(20)
+
     os_type = "Unknown"
     if sys.platform.startswith('linux'):
         if os.path.exists('/etc/lsb-release'):
@@ -462,7 +430,9 @@ def compilerTool(program: str) -> str:
     displays progress, and provides download buttons for output files.
     """
 
-    from pathlib import Path
+    progress_bar.progress(30)
+
+
 
     filename = os.path.basename(program)
     base_name, ext = os.path.splitext(filename)
@@ -593,6 +563,8 @@ def commitmentGeneratorTool(program: str) -> str:
     Run the commitment generator and display results in Streamlit.
     """
 
+    progress_bar.progress(50)
+
     session_id = st.session_state['session_id']
 
     # Check if the commitment generator executor file exists
@@ -672,15 +644,6 @@ ExecutingCommitmentGeneratorTask = Task(
 
 # Commitment Submitter Agent"""
 
-import json
-from web3 import Web3
-import datetime
-import uuid
-import os
-import hashlib
-import random
-import shutil
-
 ##########################################################
 ##########################################################
 # Role, Goal, Backstory, LLm instance, Tool (optional)
@@ -708,6 +671,8 @@ import shutil
 
 def commitmentSubmitterTool(generatorAgentOutput: str):
     """Read the generatorAgentOutput from the output of the commitmentGenerator agent."""
+
+    progress_bar.progress(75)
 
     st.write("🔄 Reading output from Commitment Generator Agent...")
     # st.info("generatorAgentOutput: "+ str(generatorAgentOutput))
@@ -1175,13 +1140,57 @@ crew1 = Crew( agents = agents,
 
 # Run action
 if st.button("Submit to ZKP Agent"):
-    if not program_name:
+    if not st.session_state.get("program_name"):
+        # If no program file is uploaded, show an error message 
         st.error("Please upload a program file before submitting.")
     else:
+            # Initialize session state if not exists
+    # if 'session_id' not in st.session_state:
+        # Generate random number and create hash
+        random_num = random.getrandbits(128)
+        hash_object = hashlib.sha256(str(random_num).encode())
+        hash_hex = hash_object.hexdigest()
+        # Folder-session name
+        # create a timestamp to attach to session_id
+        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M")
+        # Shorten hash to 16 characters
+        shrt_hash = hash_hex[:4]
+        # create a timestamp to attach to session_id
+        session_id = f"sessions/s-{timestamp}-{shrt_hash}"
+        st.session_state['session_id'] = session_id
+        # Create directory with session ID
+        session_id = Path(session_id)
+        session_id.mkdir(exist_ok=True)
+        st.session_state['session_id'] = session_id
+        # Get current session directory
+        session_id = st.session_state['session_id']
+
+        # if the program_name file exists in the session directory, copy it to the session directory
+        # copy all files from /lib to the session directory
+        shutil.copytree("lib", st.session_state['session_id'] / "lib", dirs_exist_ok=True)
+        shutil.copytree("data", st.session_state['session_id'] / "data", dirs_exist_ok=True)
+        # copy file class.json to the session directory
+        shutil.copy2("class.json", st.session_state['session_id'] / "class.json")
+        #st.success("Necessary files copied to the session directory.")
+    # else:
+    #     session_id = st.session_state['session_id']
+
+        # Store uploaded file in the current directory
+        program_name = st.session_state.get("program_name", None)
+        # st.write(f"program_name: {program_name}")
+        # st.write(f"session_id: {session_id}")
+
+#    if program_name is not None:
+        full_path=f"{st.session_state['session_id']}/{program_name}"
+        with open(full_path, "wb") as f:
+            f.write(st.session_state["program"].read())
+        st.success(f"Uploaded and saved as {program_name}")
+        st.info(f"System message: Session initialized with ID {st.session_state['session_id']}.")
+
         try:
             with st.status("Running ZKP Crew Tasks...", expanded=True) as status:
                 st.write("▶️ Starting crew tasks...")
-
+                
                 result = crew1.kickoff({
                     "program": program_name,
                     "class": str(program_class),
@@ -1239,4 +1248,12 @@ if st.button("Submit to ZKP Agent"):
         except Exception as e:
 #            st.error(f"❌ An error occurred: {e}")
             st.error("❌ Please check the above messages for more details.")
+        
+        finally:
+            st.success("✅ Crew tasks completed!")
+            progress_bar.progress(100)
+            # clean all session state variables
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+            st.session_state["session_id"] = None
 
