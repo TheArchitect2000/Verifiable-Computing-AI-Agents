@@ -141,7 +141,7 @@ if True:
         # Shorten hash to 16 characters
         shrt_hash = hash_hex[:4]
         # create a timestamp to attach to session_id
-        session_id = f"s-{timestamp}-{shrt_hash}"
+        session_id = f"sessions/s-{timestamp}-{shrt_hash}"
         st.session_state['session_id'] = session_id
         
         # Create directory with session ID
@@ -595,13 +595,13 @@ def commitmentGeneratorTool(program: str) -> str:
 
     session_id = st.session_state['session_id']
 
-    # Check if the commitmentGenerator executor file exists
-    if not os.path.exists(f"{st.session_state['commitmentGeneratorExecutorName']}"):
-        st.error(f"❌ Required commitmentGenerator executor not found: {st.session_state['commitmentGeneratorExecutorName']}. I don't have access to the GitHub repository to compile it. Contact info@fidesinnova.io to provide this access.")
+    # Check if the commitment generator executor file exists
+    if not os.path.exists(f"bin/{st.session_state['commitmentGeneratorExecutorName']}"):
+        st.error(f"❌ Required commitment generator not found: {st.session_state['commitmentGeneratorExecutorName']}. I don't have access to the GitHub repository to compile it. Contact info@fidesinnova.io to provide this access.")
         st.stop()  # Stop the Streamlit app execution
         sys.exit()  # Exit the Python script
 
-    # Check if the commitmentGenerator executor file name has RiscV in its name, then ask the user to contact info@fidesinnova.io to open access to the Fides GitHub repository for RiscV
+    # Check if the commitment generator file name has RiscV in its name, then ask the user to contact info@fidesinnova.io to open access to the Fides GitHub repository for RiscV
     if "RiscV" in st.session_state['commitmentGeneratorExecutorName']:
         st.error("❌ Please contact info@fidesinnova.io to request access to the Fides GitHub repository for RiscV support. The current commitmentGenerator executor does not support RiscV.")
         st.stop()  
@@ -609,8 +609,8 @@ def commitmentGeneratorTool(program: str) -> str:
         sys.exit()  # Exit the Python script
 
     st.write(f"program: {program}")
-    command_to_execute = f"../{st.session_state['commitmentGeneratorExecutorName']} {program}"
-    st.write(f"🛠️ Executing: `{command_to_execute[3:]}`")
+    command_to_execute = f"../../bin/{st.session_state['commitmentGeneratorExecutorName']} {program}"
+    st.write(f"🛠️ Executing: `{command_to_execute}`")
 
     try:
         result = subprocess.run(
