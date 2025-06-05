@@ -3,7 +3,7 @@
 # pip install mlflow
 
 import streamlit as st
-st.set_page_config(page_title="Fides ZKP Agent", layout="wide")
+#st.set_page_config(page_title="Fides ZKP Agent", layout="wide")
 #from commitment_management_crew import crew1
 import os
 from pathlib import Path
