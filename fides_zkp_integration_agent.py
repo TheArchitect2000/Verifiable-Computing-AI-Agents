@@ -886,7 +886,7 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
 #        raise ValueError(f"❌ Invalid Ethereum address format: {e}")
 
     # check if the CommitmentStorage.abi file exists
-    if not os.path.exists("CommitmentStorage.abi"):
+    if not os.path.exists("smartcontracts/CommitmentStorage.abi"):
         st.error(f"❌ Required CommitmentStorage.abi file not found.")
         return "Error: CommitmentStorage.abi file not found. Please make sure it is in the current directory."
  #         raise FileNotFoundError("CommitmentStorage.abi file not found. Please make sure it is in the current directory.")       
@@ -959,7 +959,7 @@ def commitmentSubmitterTool(generatorAgentOutput: str):
         """)
 
         # Load contract ABI
-        with open("CommitmentStorage.abi", "r") as abi_file:
+        with open("smartcontracts/CommitmentStorage.abi", "r") as abi_file:
             contract_abi = json.load(abi_file)
 
         contract = w3.eth.contract(
